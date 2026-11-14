@@ -43,8 +43,6 @@ main#metin{overflow:auto;padding:16px 22px}
 .ayet:hover{border-color:#b8d4ca}.ayet.secili{border-color:var(--vurgu);box-shadow:0 0 0 2px var(--vurgu2);background:var(--sec)}
 .ayet .ar{font-family:AmiriQuran,Amiri,serif;font-size:27px;line-height:2.15;direction:rtl;text-align:right}
 body.arapca-gizli main .ayet .ar,body.arapca-gizli main .besmele{display:none}
-.besmele-sade{display:none;text-align:center;font-family:Georgia,serif;font-style:italic;color:var(--soluk);margin:0 0 16px}
-body.arapca-gizli main .besmele-sade{display:block}
 .sade-no{display:none;font-size:11px;color:#b5b0a4;margin-right:8px;font-family:system-ui;vertical-align:2px}
 body.arapca-gizli .sade-no{display:inline}
 body.arapca-gizli main .ayet{padding:9px 14px;margin-bottom:6px;border-color:transparent;background:transparent}
@@ -52,8 +50,18 @@ body.arapca-gizli main .ayet:hover{background:var(--kart);border-color:var(--ciz
 body.arapca-gizli main .ayet.secili{background:var(--sec);border-color:var(--vurgu)}
 body.arapca-gizli main .ayet .yalin{margin-top:0;font-size:18px}
 header button.acik{background:#fff;color:var(--vurgu)}
+.ayet .yalin.osm,.panel-meal .osm{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:22px;line-height:2.1}
+.panel-meal .osm{font-size:20px;margin-bottom:2px}
+body.arapca-gizli main .ayet .yalin.osm{font-size:24px;font-family:Amiri,serif}
+.ayet .yalin.osm .sade-no{float:right;margin:6px 0 0 8px;direction:ltr;font-family:system-ui}
+.dn-pop[dir=rtl]{font-family:Amiri,serif;font-size:18px;line-height:1.8;text-align:right}
+.osm-yok{font-size:11px;color:#b0a37a;font-style:italic;font-family:system-ui}
 .ayet .yalin{margin-top:6px;font-size:17px;line-height:1.55;font-family:Georgia,"Times New Roman",serif}
 .ayet .yalin.eksik{color:#b0aca2;font-style:italic;font-size:14px;font-family:inherit}
+.besmele-sade{display:none;text-align:center;font-family:Georgia,serif;font-style:italic;color:var(--soluk);margin:0 0 16px}
+.besmele-sade.osm-b{font-family:Amiri,serif;font-style:normal;font-size:20px}
+body.arapca-gizli main .besmele-sade{display:block}
+.besmele-tr.osm-b{font-family:Amiri,serif;font-style:normal;font-size:18px}
 .besmele-tr{font-family:Georgia,serif;font-style:italic;font-size:14px;color:var(--soluk)}
 .duzenle{text-decoration:none;color:var(--soluk);font-size:14px;margin-left:4px}
 .inis-kutu{background:var(--vurgu2);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:14px}
@@ -116,6 +124,7 @@ mark{background:#ffe9a8}
   <h1><img src="/static/ikon.svg" alt="" style="width:26px;height:26px;vertical-align:-7px;margin-right:6px;border-radius:6px">Dedplay Kur'ân-ı Kerîm Çalışma</h1>
   <input id="ara" placeholder="Ara: Arapça veya Türkçe (örn. القلم, sabır)…">
   <label style="font-size:13px;white-space:nowrap"><span class="etiket-yazi">Karşılaştır: </span><select id="mealSec" title="Yalın mealin altında gösterilecek karşılaştırma meali"></select></label>
+  <button id="dilDugme" onclick="dilDegistir()" title="Ana meali Türkçe / Osmanlıca göster">Türkçe ⇄ عثمانلیجه</button>
   <button id="arDugme" onclick="arapcaDegistir()" title="Arapça aslını göster/gizle">ع Arapça</button>
   <button onclick="notlarAc()">Notlarım</button>
   <button onclick="kitapAc()">E-Kitap</button>
@@ -141,12 +150,14 @@ function md(t){ // basit markdown
   return t.replace(/\n\n/g,"<br><br>").replace(/([^>])\n/g,"$1<br>");
 }
 const DILLER={Turkish:"Türkçe",Ottoman:"Osmanlıca",Dutch:"Hollandaca",English:"İngilizce",German:"Almanca",French:"Fransızca",Bosnian:"Boşnakça",Azerbaijani:"Azerice"};
-const D={arapca:(()=>{try{return localStorage.getItem("arapca")==="1"}catch(e){return false}})(),yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
+const D={dil:(()=>{try{return localStorage.getItem("dil")||"tr"}catch(e){return "tr"}})(),arapca:(()=>{try{return localStorage.getItem("arapca")==="1"}catch(e){return false}})(),yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
 
+function dilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a)}
+function dilUygula(){const b=$("#dilDugme");b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}
 function arapcaDegistir(){D.arapca=!D.arapca;try{localStorage.setItem("arapca",D.arapca?"1":"0")}catch(e){};arapcaUygula()}
 function arapcaUygula(){document.body.classList.toggle("arapca-gizli",!D.arapca);$("#arDugme").classList.toggle("acik",D.arapca)}
 async function basla(){
-  arapcaUygula();
+  arapcaUygula(); dilUygula();
   try{D.yz=(await api("/api/ayarlar")).yapay_zeka}catch(e){D.yz=false}
   D.sureler=await api("/api/sureler"); sureListe();
   const ml=await api("/api/meal-kaynaklari"); const sel=$("#mealSec");
@@ -162,7 +173,7 @@ function sureListe(){
 $("#sureFiltre").oninput=sureListe;
 
 const dipnotluMetin=(m,notlar)=>esc(m).replace(/\[(\d+)\]/g,(x,n)=>notlar&&notlar[n-1]!=null?`<button class="dn" data-not="${esc(notlar[n-1])}" onclick="dipnotGoster(event,this)">${n}</button>`:"");
-function dipnotGoster(e,b){e.stopPropagation();dipnotKapat();const p=document.createElement("div");p.className="dn-pop";p.textContent=b.dataset.not;document.body.appendChild(p);
+function dipnotGoster(e,b){e.stopPropagation();dipnotKapat();const p=document.createElement("div");p.className="dn-pop";p.textContent=b.dataset.not;if(/[\u0600-\u06FF]/.test(b.dataset.not))p.setAttribute("dir","rtl");document.body.appendChild(p);
   const r=b.getBoundingClientRect();p.style.top=(window.scrollY+r.bottom+6)+"px";p.style.left=Math.max(8,Math.min(r.left-20,innerWidth-p.offsetWidth-12))+"px"}
 function dipnotKapat(){document.querySelectorAll(".dn-pop").forEach(x=>x.remove())}
 document.addEventListener("click",dipnotKapat);
@@ -172,10 +183,10 @@ async function sureAc(s,a=null){
   const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
   $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${esc(d.ad)} Sûresi</h2>
    <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet${onayli===b.ayet?" · ✓ onaylı meal":(onayli?` · ${onayli}/${b.ayet} ayet onaylı`:"")} · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a> · <a href="/api/yalin/disa-aktar/${s}" title="Bu surenin mealini inceleme/düzeltme için JSON olarak indir">inceleme dosyası ⇩</a></span></div>
-   ${s!==1&&s!==9?'<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr">Rahmân ve Rahîm olan Allah\'ın adıyla</div></div><div class="besmele-sade">Rahmân ve Rahîm olan Allah\'ın adıyla</div>':""}`+
+   ${s!==1&&s!==9?`<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr${D.dil==="osm"?" osm-b":""}">${D.dil==="osm"?"رحمان و رحیم اولان اللّهڭ آدیله":"Rahmân ve Rahîm olan Allah'ın adıyla"}</div></div><div class="besmele-sade${D.dil==="osm"?" osm-b":""}">${D.dil==="osm"?"رحمان و رحیم اولان اللّهڭ آدیله":"Rahmân ve Rahîm olan Allah'ın adıyla"}</div>`:""}`+
    d.ayetler.map(x=>`<div class="ayet" id="ay${x.a}" onclick="ayetSec(${s},${x.a})">
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
-     ${x.yalin?`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:(x.yalin_durum==="birlesik"?`<div class="yalin eksik"><span class="sade-no">${x.a}</span>↑ önceki ayetle birlikte çevrildi</div>`:`<div class="yalin eksik"><span class="sade-no">${x.a}</span>Yalın meal henüz hazırlanmadı.</div>`)}
+     ${x.yalin&&D.dil==="osm"?(x.yalin_osm?`<div class="yalin osm"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin_osm,x.dipnotlar_osm)}</div>`:`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}<div class="osm-yok">Osmanlıcası çeviricide hazırlanıyor</div></div>`):x.yalin?`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:(x.yalin_durum==="birlesik"?`<div class="yalin eksik"><span class="sade-no">${x.a}</span>↑ önceki ayetle birlikte çevrildi</div>`:`<div class="yalin eksik"><span class="sade-no">${x.a}</span>Yalın meal henüz hazırlanmadı.</div>`)}
      ${x.meal?`<div class="meal ${d.meal_yon==="rtl"?"meal-rtl":""}"><span class="kucuk">${esc(kars)}${d.meal_sayfa[x.a]?` · <a href="#" onclick="event.stopPropagation();sayfaGoster('${D.meal}',${d.meal_sayfa[x.a]});return false">s. ${d.meal_sayfa[x.a]}</a>`:""}:</span> ${esc(x.meal)}</div>`:""}
      ${x.not?`<div class="ust"><span></span><span>✎ ${x.not} not</span></div>`:""}</div>`).join("");
   if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
@@ -193,7 +204,7 @@ async function ayetSec(s,a){
   const ym=D.ayet.yalin;
   panelCiz(`<div class="baslik"><b>${esc(D.ayet.sure)} ${s}:${a}</b><span><button class="btn ikincil" title="Önceki ayet (↑)" onclick="ayetSec(${s},${Math.max(1,a-1)})">‹</button> <button class="btn ikincil" title="Sonraki ayet (↓)" onclick="ayetSec(${s},${Math.min(D.sureler[s-1].ayet,a+1)})">›</button> <button class="btn ikincil" title="Kapat (Esc)" onclick="panelKapat()">×</button></span></div>
     <div class="ar">${esc(D.ayet.arapca)}</div>
-    <div class="panel-meal">${ym?dipnotluMetin(ym.metin,JSON.parse(ym.dipnotlar||"[]")):'<span class="kucuk">Yalın meal henüz yok.</span>'} <a href="#" class="duzenle" title="Yalın meali düzenle" onclick="sekme('yalin');return false">✎</a></div>
+    <div class="panel-meal">${ym&&D.dil==="osm"&&ym.metin_osm?`<div class="osm">${dipnotluMetin(ym.metin_osm,JSON.parse(ym.dipnotlar_osm||"[]"))}</div>`:""}${ym?dipnotluMetin(ym.metin,JSON.parse(ym.dipnotlar||"[]")):'<span class="kucuk">Yalın meal henüz yok.</span>'} <a href="#" class="duzenle" title="Yalın meali düzenle" onclick="sekme('yalin');return false">✎</a></div>
     <div class="sekmeler">${sek.map(([k,t])=>`<button data-s="${k}" class="${D.sekme===k?"aktif":""}" onclick="sekme('${k}')">${t}</button>`).join("")}</div>`);
   sekme(D.sekme);
 }
@@ -355,11 +366,12 @@ async function notlarAc(q=""){const n=await api("/api/notlar?q="+encodeURICompon
 async function kitapAc(){
   modalAc(`<h2 style="margin-top:0">E-Kitap (EPUB)</h2><p>Yalın Türkçe meal; dipnotlar numaraya dokununca açılır.</p>
    <p><input class="tam" id="kSureler" placeholder="Sureler: boş = tüm Kur'an · 68 · ihlas · 78-114 · felak, nas" style="max-width:420px"></p>
+   <p><label><input type="radio" name="kDil" value="tr" checked> Türkçe</label> &nbsp; <label><input type="radio" name="kDil" value="osm"> Osmanlıca </label></p>
    <label><input type="checkbox" id="kArapca"> Arapça aslını da ekle</label><br>
    <label><input type="checkbox" id="kTemel" checked> Yalın meali henüz olmayan ayetlerde Zahir'in mealini kullan</label><br>
    <label><input type="checkbox" id="kOnay"> Sadece onaylı ayetler</label>
    <p><button class="btn" onclick="kitapIndir()">EPUB indir</button> <span class="kucuk" id="kDurum"></span></p>`)}
-function kitapIndir(){$("#kDurum").textContent="Hazırlanıyor… (tüm Kur'an birkaç saniye sürer)";location.href=`/api/kitap.epub?sureler=${encodeURIComponent($("#kSureler").value.trim())}&sadece_onayli=${$("#kOnay").checked}&arapca=${$("#kArapca").checked}&temel=${$("#kTemel").checked}`}
+function kitapIndir(){$("#kDurum").textContent="Hazırlanıyor… (tüm Kur'an birkaç saniye sürer)";location.href=`/api/kitap.epub?sureler=${encodeURIComponent($("#kSureler").value.trim())}&sadece_onayli=${$("#kOnay").checked}&arapca=${$("#kArapca").checked}&temel=${$("#kTemel").checked}&dil=${document.querySelector("input[name=kDil]:checked").value}`}
 async function kaynakAc(yenile=false){const d=await api("/api/durum");const y=(a,b)=>b?Math.round(a/b*100)+"%":"-";
   const govde=`<p class="kucuk">Uygulama her şeyi kendi veritabanında tutar. Yerelde olmayan bir şey açılırsa internetten çekilip kaydedilir. "Tümünü indir" ile bütün külliyat bir kerede sunucuya alınır (internetsiz çalışır).</p>
    <div class="istat"><div><b>${d.ayet_metni.toLocaleString()}</b>Arapça ayet metni (Hafs + 7 kıraat)</div><div><b>${d.kelime.toLocaleString()}</b>kelime/morfoloji parçası</div>

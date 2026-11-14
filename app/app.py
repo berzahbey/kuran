@@ -13,6 +13,9 @@ c.executescript("""
 CREATE TABLE IF NOT EXISTS yalin_meal(s INT, a INT, metin TEXT, dipnotlar TEXT, durum TEXT DEFAULT 'taslak', guncelleme TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(s,a));
 CREATE TABLE IF NOT EXISTS sure_bilgi(s INT PRIMARY KEY, ad_ar TEXT, nuzul TEXT);
 """)
+for _sutun in ("metin_osm TEXT", "dipnotlar_osm TEXT"):
+    try: c.execute(f"ALTER TABLE yalin_meal ADD COLUMN {_sutun}"); c.commit()
+    except Exception: pass
 VARSAYILAN_MEAL = os.environ.get("KURAN_MEAL", "tur-elmalilihamdiya")
 TEMEL_MEAL = os.environ.get("KURAN_TEMEL_MEAL", "zahir")   # yalın meali henüz olmayan ayetlerde gösterilen meal
 
@@ -29,11 +32,60 @@ def ilk_kurulum():
             with V._kilit:
                 c.executemany("INSERT OR REPLACE INTO sure_bilgi VALUES(?,?,?)",
                               [(x["chapter"], x["arabicname"], x["revelation"]) for x in json.loads(t)["chapters"]]); c.commit()
-    onayli_yukle(); ozel_yukle()
+    onayli_yukle(); ozel_yukle(); osm_eksikleri_tamamla()
     # tüm külliyat henüz inmediyse arka planda indirmeye başla
     if os.environ.get("KURAN_OTOMATIK_INDIR", "1") == "1" and not c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone():
         kur_baslat()
 threading.Thread(target=lambda: (__import__("time").sleep(2), ilk_kurulum()), daemon=True).start()
+
+# ---------------- Osmanlıca çevirici (Zahir'in osmanlica-cevirici servisi) ----------------
+OSM_URL = os.environ.get("OSM_CEVIRICI_URL", "http://host.docker.internal:8089").rstrip("/")
+_osm_kilit = threading.Lock()
+
+def osm_cevir_toplu(metinler):
+    """Metin listesini çeviriciye tek iş olarak gönderir; aynı sırayla Osmanlıca döner. Dipnot işaretleri [n] korunur."""
+    import time as _t, urllib.parse as _up
+    if not metinler: return []
+    ayrac = "\n"
+    giris = ayrac.join(re.sub(r"\[(\d+)\]", lambda m: f" QQ{m.group(1)} ", x.replace("\n", " ")) for x in metinler)
+    veri = _up.urlencode({"text": giris, "turkce": "false"}).encode()
+    with urllib.request.urlopen(urllib.request.Request(OSM_URL + "/api/upload-text", data=veri, method="POST"), timeout=60) as r:
+        is_id = json.loads(r.read())["job_id"]
+    for _ in range(600):
+        with urllib.request.urlopen(f"{OSM_URL}/api/status/{is_id}", timeout=30) as r: d = json.loads(r.read())
+        if d.get("ready"): break
+        if d.get("error"): raise RuntimeError("çevirici: " + str(d["error"]))
+        _t.sleep(1)
+    with urllib.request.urlopen(f"{OSM_URL}/api/download/{is_id}", timeout=60) as r: cikti = r.read().decode("utf-8")
+    satirlar_ = [x for x in cikti.replace("\r", "").split("\n")]
+    if len(satirlar_) < len(metinler): raise RuntimeError(f"çevirici {len(metinler)} satır yerine {len(satirlar_)} döndürdü")
+    hane = "٠١٢٣٤٥٦٧٨٩"
+    def geri(o):
+        o = re.sub(r"\s*ق([١٢٣٤٥٦٧٨٩٠]+)\s*", lambda m: "[" + "".join(str(hane.index(ch)) for ch in m.group(1)) + "] ", o)
+        return re.sub(r"\]\s+([.،؛:!؟,])", r"]\1", o).replace(" [", "[").strip()
+    return [geri(x) for x in satirlar_[:len(metinler)]]
+
+def osm_eksikleri_tamamla():
+    """Osmanlıcası olmayan yalın meal ayetlerini çeviriciden geçirir (meal + dipnotlar)."""
+    with _osm_kilit:
+        eksik = satirlar("SELECT s, a, metin, dipnotlar FROM yalin_meal WHERE metin_osm IS NULL OR metin_osm=''")
+        if not eksik: return 0
+        try:
+            metinler = []
+            for r in eksik: metinler += [r["metin"]] + json.loads(r["dipnotlar"] or "[]")
+            sonuc = osm_cevir_toplu(metinler)
+        except Exception as e:
+            print("Osmanlıca çevirici kullanılamadı:", e, flush=True); return 0
+        i = 0
+        with V._kilit:
+            for r in eksik:
+                n = len(json.loads(r["dipnotlar"] or "[]"))
+                c.execute("UPDATE yalin_meal SET metin_osm=?, dipnotlar_osm=? WHERE s=? AND a=?",
+                          (sonuc[i], json.dumps(sonuc[i + 1:i + 1 + n], ensure_ascii=False), r["s"], r["a"]))
+                i += 1 + n
+            c.commit()
+        print(f"Osmanlıca çevirici: {len(eksik)} ayet çevrildi", flush=True)
+        return len(eksik)
 
 # ---------------- Özel mealler (sunucudaki /veri/ozel klasörü; GitHub'a girmez) ----------------
 OZEL_KLASOR = os.path.join(os.path.dirname(os.path.abspath(V.DB_YOL)), "ozel")
@@ -87,8 +139,9 @@ def meal_json_yukle(d, durum_varsayilan="onayli"):
     with V._kilit:
         for x in d["ayetler"]:
             if not (x.get("meal") or "").strip(): continue
-            c.execute("INSERT OR REPLACE INTO yalin_meal(s,a,metin,dipnotlar,durum,guncelleme) VALUES(?,?,?,?,?,datetime('now'))",
-                      (s, int(x["a"]), x["meal"].strip(), json.dumps(x.get("dipnotlar", []), ensure_ascii=False), x.get("durum", durum_varsayilan)))
+            c.execute("INSERT OR REPLACE INTO yalin_meal(s,a,metin,dipnotlar,durum,guncelleme,metin_osm,dipnotlar_osm) VALUES(?,?,?,?,?,datetime('now'),?,?)",
+                      (s, int(x["a"]), x["meal"].strip(), json.dumps(x.get("dipnotlar", []), ensure_ascii=False), x.get("durum", durum_varsayilan),
+                       (x.get("meal_osm") or "").strip() or None, json.dumps(x["dipnotlar_osm"], ensure_ascii=False) if x.get("dipnotlar_osm") is not None else None))
             n += 1
         c.commit()
     return n
@@ -120,11 +173,12 @@ def sure(s: int, meal: str = ""):
     if meal: V.meal_sure_yukle(c, meal, s)
     ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
     ml = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", meal, s)} if meal else {}
-    yl = {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum FROM yalin_meal WHERE s=?", s)}
+    yl = {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum, metin_osm, dipnotlar_osm FROM yalin_meal WHERE s=?", s)}
     tm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s)}
+    tm_osm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL + "-osm", s)}
     for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
         if a not in yl:
-            if a in tm: yl[a] = {"metin": tm[a], "dipnotlar": "[]", "durum": "temel"}
+            if a in tm: yl[a] = {"metin": tm[a], "dipnotlar": "[]", "durum": "temel", "metin_osm": tm_osm.get(a), "dipnotlar_osm": "[]"}
             elif a - 1 in tm or (a - 1 in yl and yl[a - 1].get("durum") in ("temel", "birlesik")):
                 yl[a] = {"metin": "", "dipnotlar": "[]", "durum": "birlesik"}
     ns = {r["a"]: r["n"] for r in satirlar("SELECT a, count(*) n FROM notlar WHERE s=? GROUP BY a", s)}
@@ -133,6 +187,7 @@ def sure(s: int, meal: str = ""):
     return {"s": s, "ad": V.SURE_ADLARI[s - 1], "meal_yon": yon, "meal_sayfa": sayfa, "ayetler": [
         {"a": a, "arapca": ar.get(a, ""), "meal": ml.get(a, ""), "yalin": (yl.get(a) or {}).get("metin"),
          "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"),
+         "yalin_osm": (yl.get(a) or {}).get("metin_osm"), "dipnotlar_osm": json.loads((yl.get(a) or {}).get("dipnotlar_osm") or "[]"),
          "yalin_durum": (yl.get(a) or {}).get("durum"), "not": ns.get(a, 0)} for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
 
 @app.get("/api/ayet/{s}/{a}")
@@ -156,7 +211,8 @@ def ayet(s: int, a: int):
     return {"s": s, "a": a, "sure": V.SURE_ADLARI[s - 1], "arapca": hafs["metin"] if hafs else "", "kiraat": kiraat,
             "kelimeler": list(kelimeler.values()),
             "yalin": tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a) or
-                     ({"metin": r["metin"], "dipnotlar": "[]", "durum": "temel"} if (r := tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL, s, a)) else None),
+                     ({"metin": r["metin"], "dipnotlar": "[]", "durum": "temel", "metin_osm": (tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL + "-osm", s, a) or {}).get("metin"), "dipnotlar_osm": "[]"}
+                      if (r := tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL, s, a)) else None),
             "notlar": satirlar("SELECT * FROM notlar WHERE s=? AND a=? ORDER BY id DESC", s, a)}
 
 # ---------------- Mealler ----------------
@@ -298,6 +354,7 @@ def yalin_kaydet(s: int, a: int, d: dict = Body(...)):
     with V._kilit:
         c.execute("INSERT OR REPLACE INTO yalin_meal(s,a,metin,dipnotlar,durum,guncelleme) VALUES(?,?,?,?,?,datetime('now'))",
                   (s, a, d["metin"], json.dumps(d.get("dipnotlar", []), ensure_ascii=False), d.get("durum", "taslak"))); c.commit()
+    threading.Thread(target=osm_eksikleri_tamamla, daemon=True).start()   # Türkçe değişti → Osmanlıcası yeniden
     return tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a)
 
 @app.get("/api/yalin/disa-aktar/{s}")
@@ -307,7 +364,8 @@ def yalin_disa(s: int):
     yl = {r["a"]: r for r in satirlar("SELECT * FROM yalin_meal WHERE s=?", s)}
     d = {"sure": s, "ad": V.SURE_ADLARI[s - 1], "ayetler": [
         {"a": a, "arapca": ar.get(a, ""), "meal": (yl.get(a) or {}).get("metin", ""),
-         "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"), "durum": (yl.get(a) or {}).get("durum", "yok")}
+         "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"),
+         "yalin_osm": (yl.get(a) or {}).get("metin_osm"), "dipnotlar_osm": json.loads((yl.get(a) or {}).get("dipnotlar_osm") or "[]"), "durum": (yl.get(a) or {}).get("durum", "yok")}
         for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
     return Response(json.dumps(d, ensure_ascii=False, indent=1), media_type="application/json",
                     headers={"Content-Disposition": f"attachment; filename=\"sure_{s:03d}.json\"; filename*=UTF-8''{urllib.parse.quote(f'sure_{s:03d}_{V.SURE_ADLARI[s-1]}.json')}"})
@@ -317,7 +375,7 @@ def yalin_ice(d: dict = Body(...)):
     return {"ayet": meal_json_yukle(d)}
 
 @app.get("/api/kitap.epub")
-def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = False, temel: bool = True):
+def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = False, temel: bool = True, dil: str = "tr"):
     try: secili = V.sure_listesi_coz(sureler) if sureler.strip() else (list(range(1, 115)) if temel else sorted({r["s"] for r in satirlar("SELECT DISTINCT s FROM yalin_meal")}))
     except ValueError as e: raise HTTPException(400, str(e))
     bilgi = {r["s"]: r["ad_ar"] for r in satirlar("SELECT * FROM sure_bilgi")}
@@ -326,13 +384,18 @@ def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = F
         ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
         yl = {r["a"]: r for r in satirlar("SELECT * FROM yalin_meal WHERE s=?" + (" AND durum='onayli'" if sadece_onayli else ""), s)}
         if temel and not sadece_onayli:
+            osm_t = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL + "-osm", s)}
             for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s):
-                yl.setdefault(r["a"], {"metin": r["metin"], "dipnotlar": "[]"})
+                yl.setdefault(r["a"], {"metin": r["metin"], "dipnotlar": "[]", "metin_osm": osm_t.get(r["a"]), "dipnotlar_osm": "[]"})
         if not yl: continue
         ayetler, dipnot, no = [], {}, 0
         for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
             if a not in yl: continue
-            metin = yl[a]["metin"]; notlar_ = json.loads(yl[a]["dipnotlar"] or "[]")
+            if dil == "osm":
+                if not yl[a].get("metin_osm"): continue
+                metin = yl[a]["metin_osm"]; notlar_ = json.loads(yl[a].get("dipnotlar_osm") or "[]")
+            else:
+                metin = yl[a]["metin"]; notlar_ = json.loads(yl[a]["dipnotlar"] or "[]")
             def numarala(m):  # ayet içi [1],[2] → sure geneli sıra numarası
                 nonlocal no
                 i = int(m[1]) - 1
@@ -341,9 +404,11 @@ def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = F
             metin = re.sub(r"\[(\d+)\]", numarala, metin)
             ayetler.append({"a": a, "arapca": ar.get(a, ""), "meal": metin})
         kitap_s.append({"s": s, "ad": V.SURE_ADLARI[s - 1], "ad_ar": bilgi.get(s, ""), "ayetler": ayetler, "dipnotlar": dipnot})
-    if not kitap_s: raise HTTPException(404, "Kitaba girecek yalın meal yok.")
+    kitap_s = [k for k in kitap_s if k["ayetler"]]
+    if not kitap_s: raise HTTPException(404, "Kitaba girecek meal yok (Osmanlıca için: denetlenmiş sure yok).")
     ad = "Kuran_Yalin_Meal.epub" if len(kitap_s) == 114 else "Yalin_Meal_" + "-".join(str(x["s"]) for x in kitap_s)[:60] + ".epub"
-    return Response(kitap.epub_yap(kitap_s, arapca=arapca), media_type="application/epub+zip", headers={"Content-Disposition": f'attachment; filename="{ad}"'})
+    if dil == "osm": ad = ad.replace(".epub", "_Osmanlica.epub")
+    return Response(kitap.epub_yap(kitap_s, arapca=arapca, osmanlica=(dil == "osm")), media_type="application/epub+zip", headers={"Content-Disposition": f'attachment; filename="{ad}"'})
 
 # ---------------- Yapay zekâ: görüş analizi, yalın meal önerisi, Lane çevirisi ----------------
 def claude(sistem, mesaj, max_tokens=4000):
@@ -459,6 +524,9 @@ def kur_baslat():
     return {"durum": "başladı"}
 
 _uretim = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "uretim.log")}
+
+@app.post("/api/osmanlica-tamamla")
+def osmanlica_tamamla(): return {"cevrilen": osm_eksikleri_tamamla()}
 
 @app.get("/api/uretim")
 def uretim_durum():

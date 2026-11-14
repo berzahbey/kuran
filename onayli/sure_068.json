@@ -8,6 +8,11 @@
    "dipnotlar": [
     "Nûn: Bazı surelerin başında gelen tek harflerden (hurûf-u mukattaa) biridir. Gerçek anlamı kesin olarak bilinmez. Taberî bu konudaki görüşleri aktarır: Kâinatı taşıyan balık (nûn), mürekkep hokkası ya da surenin adı. Hiçbiri sahih bir delile dayanmadığı için harf çevrilmeden bırakıldı.",
     "Fiil (yesturûn, kökü s-t-r: satır dizmek) \"onlar\" öznesiyle gelir. Bu \"onlar\"ın kim olduğu açıkça söylenmez. Tefsirlerde iki görüş öne çıkar: kaderi ve amelleri yazan melekler veya kalemle yazan insanlar. \"Mâ\" edatı \"yazdıkları şey\" diye de \"yazmaları\" diye de okunabilir."
+   ],
+   "meal_osm": "نون[1]. قلمه و سطر سطر یازدقلرینه[2] آند اولسونكه،",
+   "dipnotlar_osm": [
+    "نون: بعض سوره‌لرڭ باشنده كلن تك حرفلردن (حروف مقطّعه) بریدر. كرچك آڭلامی كسین اولارق بیلینمز. طبری بو قونوده‌كی كوروشلری آقتاریر: كائناتی طاشییان بالیق (نون)، مركّب حقّه‌سی یا ده سوره‌نڭ آدی. هیچ بری صحیح بر دلیله طایانمدیغی ایچون حرف چوریلمدن بیراقیلدی.",
+    "فعل (يَسْطُرُونَ، كوكی س ط ر: سطر دیزمك) \"اونلر\" اوزنه‌سیله كلیر. بو \"اونلر\"ڭ كیم اولدیغی آچیقجه سویله‌نمز. تفسیرلرده ایكی كوروش اوڭه چیقار: قدری و عمللری یازان ملكلر ویا قلمله یازان انسانلر. \"ما\" اداتی \"یازدقلری شی\" دییه ده \"یازمه‌لری\" دییه ده اوقونابیلیر."
    ]
   },
   {
@@ -15,6 +20,10 @@
    "meal": "Sen, Rabbinin nimeti sayesinde mecnun[1] değilsin.",
    "dipnotlar": [
     "Mecnûn, c-n-n kökünden gelir: örtülmek, gizlenmek. Cin ve cennet kelimeleri de aynı köktendir. Asıl anlamı \"aklı örtülmüş\", Arapların inancına göre \"cin çarpmış\" kişidir. Mekke müşriklerinin Peygamber'e yönelttiği \"deli\" suçlamasına doğrudan cevaptır."
+   ],
+   "meal_osm": "سن، ربّڭڭ نعمتی سایه‌سنده مجنون[1] دكلسڭ.",
+   "dipnotlar_osm": [
+    "مجنون، ج ن ن كوكندن كلیر: اورتولمك، كیزلنمك. جن و جنّت كلمه‌لری ده عین كوكدندر. اصل آڭلامی \"عقلی اورتولمش\"، عربلرڭ اینانجنه كوره \"جن چارپمش\" كیشیدر. مكّه مشركلرینڭ پیغمبره یوڭلتدیكی \"دلی\" صوچلامه‌سنه طوغریدن جوابدر."
    ]
   },
   {
@@ -22,29 +31,391 @@
    "meal": "Ve senin için kesintisiz[1] bir ecir vardır.",
    "dipnotlar": [
     "Memnûn kelimesi m-n-n kökünden iki anlama gelir: (1) kesilmiş, tükenmiş; (2) başa kakılmış, minnet altında bırakılmış. Celâleyn ve Taberî'nin çoğunluk rivayeti birinci anlamı tercih eder. Râzî ve Kurtubî ikinci anlamı da kabul eder. Meal birinci anlamla verildi, ikinci anlam da ayetin kapsamındadır."
+   ],
+   "meal_osm": "و سنڭ ایچون كسینتیسز[1] بر اجر واردر.",
+   "dipnotlar_osm": [
+    "ممنون كلمه‌سی م ن ن كوكندن ایكی آڭلاما كلیر: (١) كسیلمش، توكنمش؛ (٢) باشه قاقیلمش، منّت آلتنده بیراقیلمش. جلالین و طبرینڭ چوغنلق روایتی برنجی آڭلامی ترجیح ایدر. رازی و قرتبی ایكنجی آڭلامی ده قبول ایدر. مآل برنجی آڭلامله ویریلدی، ایكنجی آڭلام ده آیتڭ قاپسامنده‌در."
    ]
   },
   {
    "a": 4,
    "meal": "Ve sen, elbette yüce bir ahlâk üzerindesin.",
-   "dipnotlar": []
+   "dipnotlar": [],
+   "meal_osm": "و سن، البتّه یوجه بر اخلاق اوزرنده‌سڭ.",
+   "dipnotlar_osm": []
   },
   {
    "a": 5,
    "meal": "Yakında sen de göreceksin, onlar da görecekler:",
-   "dipnotlar": []
+   "dipnotlar": [],
+   "meal_osm": "یاقینده سن ده كوره‌جكسڭ، اونلر ده كوره‌جكلر:",
+   "dipnotlar_osm": []
   },
   {
    "a": 6,
    "meal": "Hanginizin aklı çelinmiş[1] olduğunu.",
    "dipnotlar": [
     "Meftûn, f-t-n kökünden gelir. Kökün asıl anlamı \"altını ateşte eritip denemek\"tir, buradan \"denenen, fitneye düşürülen, aklı çelinen\" anlamlarına geçer. Celâleyn kelimeyi mastar olarak okur: \"hanginizde delilik var\". Ayetteki \"bi-\" edatının fazladan mı, \"-de\" anlamında mı olduğu konusunda dilciler ayrışmıştır. İki okuma da aynı anlama çıkar."
+   ],
+   "meal_osm": "هانكیڭزڭ عقلی چلینمش[1] اولدیغنی.",
+   "dipnotlar_osm": [
+    "مفتون، ف ت ن كوكندن كلیر. كوكڭ اصل آڭلامی \"آلتونی آتشده اریتوب دڭه‌مك\"در، بورادن \"دڭه‌نن، فتنه‌یه دوشورولن، عقلی چلینن\" آڭلاملرینه كچر. جلالین كلمه‌یی مصدر اولارق اوقور: \"هانكیڭزده دلیلك وار\". آیتده‌كی «بِ» اداتنڭ فضله‌دنمی، «ده» آڭلامنده‌می اولدیغی قونوسنده دیلجیلر آیریشمشدر. ایكی اوقومه ده عین آڭلاما چیقار."
    ]
   },
   {
    "a": 7,
    "meal": "Şüphesiz Rabbin, kendi yolundan sapanı en iyi bilendir; doğru yolu bulanları da en iyi O bilir.",
-   "dipnotlar": []
+   "dipnotlar": [],
+   "meal_osm": "شبهه‌سز ربّڭ، كندی یولندن صاپانی اڭ ایی بیلندر؛ طوغری یولی بولانلری ده اڭ ایی او بیلیر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 8,
+   "meal": "Öyleyse yalanlayanlara itaat etme.",
+   "dipnotlar": [],
+   "meal_osm": "اویله‌یسه یالانلایانلره اطاعت ایتمه.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 9,
+   "meal": "İsterler ki sen yumuşak davranasın da onlar da yumuşak davransınlar.",
+   "dipnotlar": [],
+   "meal_osm": "ایسترلركه سن یوموشاق طاوراناسڭ ده اونلر ده یوموشاق طاورانسینلر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 10,
+   "meal": "Ve şunların hiçbirine itaat etme: çok yemin eden, aşağılık,",
+   "dipnotlar": [],
+   "meal_osm": "و شونلرڭ هیچ برینه اطاعت ایتمه: چوق یمین ایدن، آشاغیلق،",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 11,
+   "meal": "durmadan kusur arayıp çekiştiren, laf taşıyıp dolaşan,",
+   "dipnotlar": [],
+   "meal_osm": "طورمدن قصور آرایوب چكیشدیرن، لاف طاشییوب طولاشان،",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 12,
+   "meal": "hayra engel olan, haddi aşan, günahkâr,",
+   "dipnotlar": [],
+   "meal_osm": "خیره انكل اولان، حدّی آشان، كناهكار،",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 13,
+   "meal": "kaba, bütün bunlardan sonra da soysuz[1] olana;",
+   "dipnotlar": [
+    "Zenîm, z-n-m kökünden gelir; aslı, keçinin boynundan sarkan et parçasıdır (zeneme). Buradan iki anlam çıkar: bir topluluğa sonradan eklenmiş, nesebi belirsiz kimse (Taberî'nin aktardığı çoğunluk görüşü) ve keçinin bu sarkık etiyle tanınması gibi kötülüğüyle tanınan kimse (İbn Abbas'tan bir rivayet, Zemahşerî)."
+   ],
+   "meal_osm": "قبا، بتون بونلردن صوڭره ده صویسز[1] اولانه؛",
+   "dipnotlar_osm": [
+    "زنیم، ز ن م كوكندن كلیر؛ اصلی، كچینڭ بوینندن صارقان ات پارچه‌سیدر (زنمه). بورادن ایكی آڭلام چیقار: بر طوپلولغه صوڭره‌دن اكلنمش، نسبی بلیرسز كیمسه (طبرینڭ آقتاردیغی چوغنلق كوروشی) و كچینڭ بو صارقیق اتیله طانینمه‌سی كبی كوتولكیله طانینان كیمسه (ابن عبّاسدن بر روایت، زمخشری)."
+   ]
+  },
+  {
+   "a": 14,
+   "meal": "mal ve oğullar sahibi oldu diye.",
+   "dipnotlar": [],
+   "meal_osm": "مال و اوغوللر صاحبی اولدی دییه.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 15,
+   "meal": "Ona âyetlerimiz okunduğunda: \"Öncekilerin masalları!\" der.",
+   "dipnotlar": [],
+   "meal_osm": "اوڭا آیتلریمز اوقوندیغنده: \"اوڭجه‌كیلرڭ ماصاللری!\" دیر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 16,
+   "meal": "Yakında onu burnunun üstünden damgalayacağız.",
+   "dipnotlar": [],
+   "meal_osm": "یاقینده اونی بورننڭ اوستندن طامغاله‌یاجغز.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 17,
+   "meal": "Şüphesiz Biz onları, o bahçe sahiplerini denediğimiz gibi denedik. Hani onlar, sabah olurken onu mutlaka devşireceklerine yemin etmişlerdi;",
+   "dipnotlar": [],
+   "meal_osm": "شبهه‌سز بز اونلری، او باغچه صاحبلرینی دڭه‌دیكمز كبی دڭه‌دك. هانی اونلر، صباح اولوركن اونی مطلقا دوشیره‌جكلرینه یمین ایتمشلردی؛",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 18,
+   "meal": "ve istisna[1] yapmıyorlardı.",
+   "dipnotlar": [
+    "İstisna: Taberî ve Zemahşerî'ye göre \"inşallah\" demeyip işi Allah'ın dilemesine bağlamamaları; bir görüşe göre de ürünün yoksul payını ayırmamaları."
+   ],
+   "meal_osm": "و استثنا[1] یاپمییورلردی.",
+   "dipnotlar_osm": [
+    "استثنا: طبری و زمخشری‌یه كوره \"ان شاء اللّه\" دیمه‌یوب ایشی اللّهڭ دیلمه‌سنه باغلامامه‌لری؛ بر كوروشه كوره ده اورونڭ یوقسول پاینی آییرمامه‌لری."
+   ]
+  },
+  {
+   "a": 19,
+   "meal": "Onlar uyurken Rabbinden bir afet onu sarıverdi;",
+   "dipnotlar": [],
+   "meal_osm": "اونلر اویوركن ربّڭدن بر آفت اونی صاریویردی؛",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 20,
+   "meal": "ve bahçe, kesilip biçilmiş[1] gibi oluverdi.",
+   "dipnotlar": [
+    "Sarîm, s-r-m kökünden gelir (kesmek, koparmak). Hem \"meyvesi tamamen kesilip götürülmüş\" hem de \"zifiri gece gibi kapkara\" anlamına gelir; Taberî ve Zemahşerî iki anlamı da aktarır."
+   ],
+   "meal_osm": "و باغچه، كسیلوب بیچیلمش[1] كبی اولیویردی.",
+   "dipnotlar_osm": [
+    "صریم، ص ر م كوكندن كلیر (كسمك، قوپارمق). هم \"میوه‌سی تماما كسیلوب كوتورولمش\" هم ده \"زیفیری كیجه كبی قاپ قره\" آڭلامنه كلیر؛ طبری و زمخشری ایكی آڭلامی ده آقتاریر."
+   ]
+  },
+  {
+   "a": 21,
+   "meal": "Sabah olunca birbirlerine seslendiler:",
+   "dipnotlar": [],
+   "meal_osm": "صباح اولنجه بربرلرینه سسلندیلر:",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 22,
+   "meal": "\"Devşirecekseniz ekininize erkenden gidin!\" diye.",
+   "dipnotlar": [],
+   "meal_osm": "\"دوشیره‌جكسه‌ڭز اكینڭزه اركندن كیدڭ!\" دییه.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 23,
+   "meal": "Derken fısıldaşarak yola koyuldular:",
+   "dipnotlar": [],
+   "meal_osm": "دیركن فیصیلداشارق یوله قویولدیلر:",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 24,
+   "meal": "\"Bugün oraya sakın hiçbir yoksul yanınıza girmesin!\" diye.",
+   "dipnotlar": [],
+   "meal_osm": "\"بوكون اورایه صاقین هیچ بر یوقسول یانڭزه كیرمه‌سین!\" دییه.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 25,
+   "meal": "Ve engellemeye[1] güçleri yeteceğini sanarak erkenden gittiler.",
+   "dipnotlar": [
+    "Hard, h-r-d kökünden gelir: men etmek, engellemek; kastetmek, azmetmek; öfkelenmek. Taberî bu ayette üç görüş aktarır: yoksulları engelleme kararlılığıyla, öfke ve hırsla, ya da \"Hard\" adlı bahçelerine gittiler."
+   ],
+   "meal_osm": "و انكللمه‌یه[1] كوچلری یته‌جكنی صانارق اركندن كیتدیلر.",
+   "dipnotlar_osm": [
+    "حرد، ح ر د كوكندن كلیر: منع ایتمك، انكلله‌مك؛ قصد ایتمك، عزم ایتمك؛ اوفكلنمك. طبری بو آیتده اوچ كوروش آقتاریر: یوقسوللری انكللمه قرارلیلغیله، اوفكه و حرصله، یا ده \"حرد\" آدلی باغچه‌لرینه كیتدیلر."
+   ]
+  },
+  {
+   "a": 26,
+   "meal": "Fakat onu gördüklerinde: \"Şüphesiz biz yolumuzu şaşırmışız!\" dediler.",
+   "dipnotlar": [],
+   "meal_osm": "فقط اونی كوردكلرنده: \"شبهه‌سز بز یولمزی شاشیرمشز!\" دیدیلر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 27,
+   "meal": "\"Hayır, biz mahrum bırakılmışız!\"",
+   "dipnotlar": [],
+   "meal_osm": "\"خیر، بز محروم بیراقیلمشز!\"",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 28,
+   "meal": "İçlerinden en makul olanı: \"Size, tesbih[1] etmeniz gerekmez mi, dememiş miydim?\" dedi.",
+   "dipnotlar": [
+    "Tesbih: Taberî'ye göre burada \"inşallah\" demek, yani 18. ayetteki istisna; Zemahşerî'ye göre Allah'ı anıp O'na yönelmek."
+   ],
+   "meal_osm": "ایچلرندن اڭ معقول اولانی: \"سزه، تسبیح[1] ایتمه‌ڭز كركمزمی، دیمه‌مش مییدم؟\" دیدی.",
+   "dipnotlar_osm": [
+    "تسبیح: طبری‌یه كوره بوراده \"ان شاء اللّه\" دیمك، یعنی ١٨ نجی آیتده‌كی استثنا؛ زمخشری‌یه كوره اللّهی آڭوب اوڭا یوڭلمك."
+   ]
+  },
+  {
+   "a": 29,
+   "meal": "\"Rabbimizi tesbih ederiz; şüphesiz biz zalimlermişiz!\" dediler.",
+   "dipnotlar": [],
+   "meal_osm": "\"ربّمزی تسبیح ایدرز؛ شبهه‌سز بز ظالملرمشز!\" دیدیلر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 30,
+   "meal": "Derken birbirlerini kınayarak birbirlerine döndüler.",
+   "dipnotlar": [],
+   "meal_osm": "دیركن بربرلرینی قینایارق بربرلرینه دوندیلر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 31,
+   "meal": "\"Yazıklar olsun bize! Gerçekten biz azgınlarmışız!\" dediler.",
+   "dipnotlar": [],
+   "meal_osm": "\"یازیقلر اولسون بزه! كرچكدن بز آزغینلرمشز!\" دیدیلر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 32,
+   "meal": "\"Umulur ki Rabbimiz bize bunun yerine daha hayırlısını verir. Şüphesiz biz Rabbimize yönelenleriz.\"",
+   "dipnotlar": [],
+   "meal_osm": "\"اومولوركه ربّمز بزه بونڭ یرینه داها خیرلیسنی ویرر. شبهه‌سز بز ربّمزه یوڭلنلرز.\"",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 33,
+   "meal": "İşte azap böyledir; âhiret azabı ise daha büyüktür. Keşke bilselerdi!",
+   "dipnotlar": [],
+   "meal_osm": "ایشته عذاب بویله‌در؛ آخرت عذابی ایسه داها بیوكدر. كاشكه بیلسه‌لردی!",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 34,
+   "meal": "Şüphesiz takvâ sahipleri için Rableri katında nimet cennetleri vardır.",
+   "dipnotlar": [],
+   "meal_osm": "شبهه‌سز تقوا صاحبلری ایچون ربّلری قاتنده نعمت جنّتلری واردر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 35,
+   "meal": "Biz, Müslümanları suçlular gibi tutar mıyız?",
+   "dipnotlar": [],
+   "meal_osm": "بز، مسلمانلری صوچلیلر كبی طوتارمییز؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 36,
+   "meal": "Size ne oluyor? Nasıl hüküm veriyorsunuz?",
+   "dipnotlar": [],
+   "meal_osm": "سزه نه اولویور؟ ناصل حكم ویرییورسڭز؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 37,
+   "meal": "Yoksa sizin bir kitabınız var da onda mı okuyorsunuz:",
+   "dipnotlar": [],
+   "meal_osm": "یوقسه سزڭ بر كتابیڭز وار ده اونده‌می اوقویورسڭز:",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 38,
+   "meal": "\"Beğendiğiniz her şey elbette sizindir\" diye?",
+   "dipnotlar": [],
+   "meal_osm": "\"بكندیكڭز هر شی البتّه سزڭدر\" دییه؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 39,
+   "meal": "Yoksa \"Neye hükmederseniz elbette sizindir\" diye, kıyamet gününe kadar geçerli, Bize karşı yeminleriniz mi var?",
+   "dipnotlar": [],
+   "meal_osm": "یوقسه \"نه‌یه حكم ایدرسه‌ڭز البتّه سزڭدر\" دییه، قیامت كوننه قدر كچرلی، بزه قارشو یمینلریڭزمی وار؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 40,
+   "meal": "Sor onlara: Hangisi buna kefil?",
+   "dipnotlar": [],
+   "meal_osm": "صور اونلره: هانكیسی بوڭا كفیل؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 41,
+   "meal": "Yoksa onların ortakları mı var? Doğru söylüyorlarsa ortaklarını getirsinler!",
+   "dipnotlar": [],
+   "meal_osm": "یوقسه اونلرڭ اورتاقلریمی وار؟ طوغری سویله‌یورلرسه اورتاقلرینی كتیرسینلر!",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 42,
+   "meal": "İncikten açılacağı[1] gün secdeye çağrılırlar, fakat güç yetiremezler.",
+   "dipnotlar": [
+    "Yükşefu an sâk: kelimesi kelimesine \"incikten açılır\". Araplar işin çok çetinleştiğini \"savaş baldırını açtı\" diye anlatır; İbn Abbas ve Taberî ayeti bu deyimle, kıyametin dehşetiyle açıklar. Buhârî'deki bir hadiste ise (Tefsîr, 68. sure) Rabbin sâkını açacağı ve müminlerin secdeye kapanacağı bildirilir."
+   ],
+   "meal_osm": "اینجیكدن آچیلاجغی[1] كون سجده‌یه چاغریلیرلر، فقط كوچ یتیره‌مزلر.",
+   "dipnotlar_osm": [
+    "يُكْشَفُ عَنْ سَاقٍ: كلمه‌سی كلمه‌سنه \"اینجیكدن آچیلیر\". عربلر ایشڭ چوق چتینلشدیكنی \"صاواش بالدیرینی آچدی\" دییه آڭلاتیر؛ ابن عبّاس و طبری آیتی بو دییمله، قیامتڭ دهشتیله آچیقلار. بخاریده‌كی بر حدیثده ایسه (تفسیر، ٦٨ نجی سوره) ربّڭ ساقنی آچاجغی و مؤمنلرڭ سجده‌یه قاپاناجغی بیلدیریلیر."
+   ]
+  },
+  {
+   "a": 43,
+   "meal": "Gözleri düşkün, kendilerini bir zillet kaplamış hâlde. Oysa onlar, sapasağlamken secdeye çağrılıyorlardı.",
+   "dipnotlar": [],
+   "meal_osm": "كوزلری دوشكون، كندیلرینی بر ذلّت قاپلامش حالده. اویسه اونلر، صاپاساغلامكن سجده‌یه چاغریلییورلردی.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 44,
+   "meal": "Artık bu sözü yalanlayanı Bana bırak. Onları bilmedikleri yerden adım adım yakalayacağız.",
+   "dipnotlar": [],
+   "meal_osm": "آرتق بو سوزی یالانلایانی بڭا بیراق. اونلری بیلمدكلری یردن آدیم آدیم یاقه‌لایاجغز.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 45,
+   "meal": "Ve onlara mühlet veriyorum; şüphesiz Benim tuzağım sağlamdır.",
+   "dipnotlar": [],
+   "meal_osm": "و اونلره مهلت ویرییورم؛ شبهه‌سز بنم طوزاغیم صاغلامدر.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 46,
+   "meal": "Yoksa sen onlardan bir ücret istiyorsun da onlar ağır bir borç altında mı kalıyorlar?",
+   "dipnotlar": [],
+   "meal_osm": "یوقسه سن اونلردن بر اجرت ایسته‌یورسڭ ده اونلر آغیر بر بورچ آلتنده‌می قالییورلر؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 47,
+   "meal": "Yoksa gayb onların yanında da onlar mı yazıyorlar?",
+   "dipnotlar": [],
+   "meal_osm": "یوقسه غیب اونلرڭ یاننده ده اونلرمی یازییورلر؟",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 48,
+   "meal": "Artık Rabbinin hükmüne sabret ve balık sahibi[1] gibi olma. Hani o, içi gamla dolu hâlde seslenmişti.",
+   "dipnotlar": [
+    "Balık sahibi: Yûnus peygamber (Enbiyâ 87-88, Sâffât 139-148)."
+   ],
+   "meal_osm": "آرتق ربّڭڭ حكمنه صبر ایت و بالیق صاحبی[1] كبی اولما. هانی او، ایچی غمله طولو حالده سسلنمشدی.",
+   "dipnotlar_osm": [
+    "بالیق صاحبی: یونس پیغمبر (انبیا ٨٧-٨٨، صافّات ١٣٩-١٤٨)."
+   ]
+  },
+  {
+   "a": 49,
+   "meal": "Eğer Rabbinden bir nimet ona yetişmeseydi, kınanmış olarak ıssız bir yere atılırdı.",
+   "dipnotlar": [],
+   "meal_osm": "اكر ربّندن بر نعمت اوڭا یتیشمه‌سه‌یدی، قینانمش اولارق ایصسز بر یره آتیلیردی.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 50,
+   "meal": "Fakat Rabbi onu seçti ve onu sâlihlerden kıldı.",
+   "dipnotlar": [],
+   "meal_osm": "فقط ربّی اونی سچدی و اونی صالحلردن قیلدی.",
+   "dipnotlar_osm": []
+  },
+  {
+   "a": 51,
+   "meal": "Şüphesiz inkâr edenler zikri[1] işittikleri zaman, neredeyse seni gözleriyle devireceklerdi. \"O elbette bir mecnundur!\" diyorlar.",
+   "dipnotlar": [
+    "Zikr, z-k-r kökünden gelir: hatırlatma, öğüt, anma. Burada Kur'ân kastedilir (Taberî, İbn Âşûr)."
+   ],
+   "meal_osm": "شبهه‌سز انكار ایدنلر ذكری[1] ایشیتدكلری زمان، نره‌ده‌یسه سنی كوزلریله دویره‌جكلردی. \"او البتّه بر مجنوندر!\" دییورلر.",
+   "dipnotlar_osm": [
+    "ذكر، ذ ك ر كوكندن كلیر: خاطرلاتمه، اوكوت، آڭمه. بوراده قرآن قصد ایدیلیر (طبری، ابن عاشور)."
+   ]
+  },
+  {
+   "a": 52,
+   "meal": "Oysa o, âlemler için ancak bir zikirdir.",
+   "dipnotlar": [],
+   "meal_osm": "اویسه او، عالملر ایچون آنجق بر ذكردر.",
+   "dipnotlar_osm": []
   }
- ]
+ ],
+ "osmanlica": "denetlendi"
 }

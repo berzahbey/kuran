@@ -2,7 +2,9 @@
 import html, io, os, re, uuid, zipfile, datetime
 
 FONT = os.path.join(os.path.dirname(__file__), "static", "font", "AmiriQuran.ttf")
+FONT_OSM = os.path.join(os.path.dirname(__file__), "static", "font", "Amiri-Regular.ttf")   # Osmanlıca harfler (ڭ گ چ پ) için
 CSS = """@font-face{font-family:"AmiriQuran";src:url(AmiriQuran.ttf)}
+@font-face{font-family:"Amiri";src:url(Amiri-Regular.ttf)}
 body{font-family:serif;line-height:1.6;margin:1em}
 h1{text-align:center;font-size:1.5em;margin:1em 0 .2em}
 h1 .ar{display:block;font-family:"AmiriQuran",serif;font-size:1.1em;margin-bottom:.2em}
@@ -13,6 +15,7 @@ h1 .ar{display:block;font-family:"AmiriQuran",serif;font-size:1.1em;margin-botto
 p.ar{font-family:"AmiriQuran",serif;font-size:1.45em;text-align:right;line-height:2.1;margin:0 0 .25em}
 p.tr{margin:0;text-align:justify}
 p.tr.sade{margin:0 0 .7em}
+p.osm,aside[lang=ota],.besmele .tr{font-family:"Amiri",serif;font-size:1.25em;line-height:2;text-align:right}
 .no{font-family:"AmiriQuran",serif}
 a.noteref{vertical-align:super;font-size:.7em;text-decoration:none;font-weight:bold}
 aside.dipnot{font-size:.9em;margin:.6em 0}
@@ -28,7 +31,8 @@ def _xhtml(baslik, govde):
             'xmlns:epub="http://www.idpf.org/2007/ops" lang="tr" xml:lang="tr"><head><meta charset="utf-8"/>'
             f'<title>{html.escape(baslik)}</title><link rel="stylesheet" href="stil.css"/></head><body>{govde}</body></html>')
 
-def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar="Dedplay", arapca=True):
+def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar="Dedplay", arapca=True, osmanlica=False):
+    if osmanlica: baslik = "قرآن كریم — یالین مآل"
     """sureler: [{"s":68, "ad":"Kalem", "ad_ar":"القلم", "ayetler":[{"a":1,"arapca":"...","meal":"...[1]..."}], "dipnotlar":{"1":"..."}}]"""
     bolumler = []
     for d in sureler:
@@ -38,16 +42,17 @@ def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar
             t = re.sub(r"\[(\d+)\]", lambda m: f'<a epub:type="noteref" class="noteref" id="{fid}-r{m[1]}" href="#{fid}-n{m[1]}">{m[1]}</a>', t)
             ar = html.escape(ay["arapca"])
             # Fâtiha'nın 1. ayeti besmeledir; ayrı besmele basılmaz
+            tr_ozn = ' class="tr osm" lang="ota" dir="rtl"' if osmanlica else ' class="tr"'
             if arapca:
-                paras.append(f'<div class="ayet"><p class="ar" lang="ar" dir="rtl">{ar} <span class="no">﴿{str(ay["a"]).translate(AR_RAKAM)}﴾</span></p><p class="tr">{t}</p></div>')
+                paras.append(f'<div class="ayet"><p class="ar" lang="ar" dir="rtl">{ar} <span class="no">﴿{str(ay["a"]).translate(AR_RAKAM)}﴾</span></p><p{tr_ozn}>{t}</p></div>')
             else:
-                paras.append(f'<p class="tr sade">{t}</p>')
-        notlar = "".join(f'<aside epub:type="footnote" class="dipnot" id="{fid}-n{k}"><p><a class="geri" href="#{fid}-r{k}">{k}.</a> {html.escape(v)}</p></aside>'
+                paras.append(f'<p{tr_ozn.replace(chr(34)+"tr", chr(34)+"tr sade")}>{t}</p>')
+        notlar = "".join(f'<aside epub:type="footnote" class="dipnot" id="{fid}-n{k}"' + (' dir="rtl" lang="ota"' if osmanlica else '') + f'><p><a class="geri" href="#{fid}-r{k}">{k}.</a> {html.escape(v)}</p></aside>'
                          for k, v in sorted(d.get("dipnotlar", {}).items(), key=lambda x: int(x[0])))
-        besm = "" if s in (1, 9) else (f'<div class="besmele">' + (f'<span class="ar" lang="ar" dir="rtl">{BESMELE_AR}</span>' if arapca else "") + '<span class="tr">Rahmân ve Rahîm olan Allah\'ın adıyla</span></div>')
+        besm = "" if s in (1, 9) else (f'<div class="besmele">' + (f'<span class="ar" lang="ar" dir="rtl">{BESMELE_AR}</span>' if arapca else "") + '<span class="tr">' + ("رحمان و رحیم اولان اللّهڭ آدیله" if osmanlica else "Rahmân ve Rahîm olan Allah\'ın adıyla") + '</span></div>')
         govde = (f'<section epub:type="chapter"><h1><span class="ar" lang="ar" dir="rtl">{html.escape(d.get("ad_ar",""))}</span>'
-                 f'{html.escape(d["ad"])} Sûresi</h1>{besm}{"".join(paras)}'
-                 + (f'<section class="notlar" epub:type="footnotes"><h2>Dipnotlar</h2>{notlar}</section>' if notlar else "") + "</section>")
+                 + ("" if osmanlica else f'{html.escape(d["ad"])} Sûresi') + '</h1>' + besm + "".join(paras)
+                 + (f'<section class="notlar" epub:type="footnotes"><h2>{"حاشیه‌لر" if osmanlica else "Dipnotlar"}</h2>{notlar}</section>' if notlar else "") + "</section>")
         bolumler.append((fid, f'{d["ad"]} Sûresi', _xhtml(d["ad"], govde)))
     bid = str(uuid.uuid4()); zaman = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     nav = _xhtml("İçindekiler", '<nav epub:type="toc"><h1>İçindekiler</h1><ol>' +
@@ -57,7 +62,7 @@ def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar
            f'<dc:title>{html.escape(baslik)}</dc:title><dc:creator>{html.escape(yazar)}</dc:creator><dc:language>tr</dc:language><dc:language>ar</dc:language>'
            f'<meta property="dcterms:modified">{zaman}</meta></metadata><manifest>'
            '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="css" href="stil.css" media-type="text/css"/>'
-           '<item id="font" href="AmiriQuran.ttf" media-type="font/ttf"/>'
+           '<item id="font" href="AmiriQuran.ttf" media-type="font/ttf"/><item id="font2" href="Amiri-Regular.ttf" media-type="font/ttf"/>'
            + "".join(f'<item id="{b[0]}" href="{b[0]}.xhtml" media-type="application/xhtml+xml"/>' for b in bolumler)
            + '</manifest><spine>' + "".join(f'<itemref idref="{b[0]}"/>' for b in bolumler) + "</spine></package>")
     buf = io.BytesIO()
@@ -68,4 +73,5 @@ def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar
         for ad, icerik in [("content.opf", opf), ("nav.xhtml", nav), ("stil.css", CSS)] + [(b[0] + ".xhtml", b[2]) for b in bolumler]:
             z.writestr("OEBPS/" + ad, icerik, compress_type=zipfile.ZIP_DEFLATED)
         z.write(FONT, "OEBPS/AmiriQuran.ttf", compress_type=zipfile.ZIP_DEFLATED)
+        z.write(FONT_OSM, "OEBPS/Amiri-Regular.ttf", compress_type=zipfile.ZIP_DEFLATED)
     return buf.getvalue()

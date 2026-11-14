@@ -9,6 +9,8 @@ services:
     # build: https://github.com/berzahbey/kuran.git#main
     container_name: kuran-calisma
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # sunucudaki diğer uygulamalara (çevirici) erişim
     ports:
       - "8120:8120"
     volumes:
@@ -22,6 +24,7 @@ services:
       YZ_ANAHTAR: ""
       YZ_MODEL: gemini-flash-latest      # AI Studio'daki ücretsiz modellerden biri
       YZ_DAKIKADA: "8"                   # ücretsiz katman için dakikada istek sınırı
+      OSM_CEVIRICI_URL: http://host.docker.internal:8089   # Osmanlıca çevirici (Dedplay Stüdyo, port 8089)
       URETIM_PAKET: tam                  # kaynak paketi: tam | orta | kucuk (token sınırı hatası alırsanız küçültün)
       # OpenRouter örneği:  YZ_SAGLAYICI: openai  YZ_URL: https://openrouter.ai/api/v1/chat/completions  YZ_MODEL: <ücretsiz model>:free
       # Yerel Ollama örneği: YZ_SAGLAYICI: openai  YZ_URL: http://dedplay:11434/v1/chat/completions  YZ_MODEL: qwen2.5:14b

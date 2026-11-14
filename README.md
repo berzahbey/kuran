@@ -7,6 +7,13 @@ Merkezinde Kur'an-ı Kerîm'in olduğu, tüm meal, tefsir, hadis ve lügat çal�
 ## Ana gövde: yalın meal
 Uygulama açılınca okunan metin **en yalın Türkçe meal**dir. Uzun açıklama gereken yerlerde numara vardır, numaraya dokununca dipnot açılır. Arapça aslı üstteki **ع Arapça** düğmesiyle açılıp kapanır (tercih hatırlanır). E-kitap (EPUB) da aynı meali verir; istenirse Arapça aslı eklenir.
 
+### Türkçe ⇄ Osmanlıca
+Başlıktaki **Türkçe ⇄ عثمانلیجه** düğmesi ana meali Osmanlıcaya çevirir (dipnotlar dahil). Osmanlıca metin Zahir'in **osmanlica-cevirici** servisinden gelir (Hayrat imlâsı):
+- Değişmemiş ayetler: `mealler/zahir_osm.json` (mealin tamamı çeviriciden toplu geçirildi).
+- Onaylanan/düzenlenen ayetler: uygulama Türkçe metni kendiliğinden çeviriciye gönderir (`OSM_CEVIRICI_URL`, varsayılan `http://host.docker.internal:8089`) ve sonucu saklar.
+- Çeviricinin hataları denetlenip düzeltilir; düzeltilmiş Osmanlıca `onayli/sure_XXX.json` içinde `meal_osm` / `dipnotlar_osm` olarak durur (ör. Kalem).
+E-Kitap'ta "Osmanlıca" seçilirse kitap Osmanlıca basılır (Amiri fontu gömülü).
+
 ## Bir ayete tıklayınca: çalışma paneli
 Panelde ayetin Arapçası ve yalın meali (✎ ile düzenlenir), altında 5 bölüm:
 
