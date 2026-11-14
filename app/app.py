@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS yalin_meal(s INT, a INT, metin TEXT, dipnotlar TEXT, 
 CREATE TABLE IF NOT EXISTS sure_bilgi(s INT PRIMARY KEY, ad_ar TEXT, nuzul TEXT);
 """)
 VARSAYILAN_MEAL = os.environ.get("KURAN_MEAL", "tur-elmalilihamdiya")
+TEMEL_MEAL = os.environ.get("KURAN_TEMEL_MEAL", "zahir")   # yalın meali henüz olmayan ayetlerde gösterilen meal
 
 def satirlar(sql, *p): return [dict(r) for r in c.execute(sql, p).fetchall()]
 def tek(sql, *p):
@@ -28,11 +29,53 @@ def ilk_kurulum():
             with V._kilit:
                 c.executemany("INSERT OR REPLACE INTO sure_bilgi VALUES(?,?,?)",
                               [(x["chapter"], x["arabicname"], x["revelation"]) for x in json.loads(t)["chapters"]]); c.commit()
-    onayli_yukle()
+    onayli_yukle(); ozel_yukle()
     # tüm külliyat henüz inmediyse arka planda indirmeye başla
     if os.environ.get("KURAN_OTOMATIK_INDIR", "1") == "1" and not c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone():
         kur_baslat()
 threading.Thread(target=lambda: (__import__("time").sleep(2), ilk_kurulum()), daemon=True).start()
+
+# ---------------- Özel mealler (sunucudaki /veri/ozel klasörü; GitHub'a girmez) ----------------
+OZEL_KLASOR = os.path.join(os.path.dirname(os.path.abspath(V.DB_YOL)), "ozel")
+c.execute("CREATE TABLE IF NOT EXISTS ozel_sayfa(id TEXT, s INT, a INT, sayfa INT, PRIMARY KEY(id,s,a))")
+c.execute("CREATE TABLE IF NOT EXISTS ozel_meal(id TEXT PRIMARY KEY, pdf TEXT, ozet TEXT)")
+
+DEPO_MEALLER = os.path.join(BURASI, "..", "mealler")
+
+def ozel_yukle():
+    """Depodaki mealler/*.json ve sunucudaki /veri/ozel/*.json → meal tablosuna (içerik değişince yeniden).
+    Biçim: {"id","dil","yazar","yon","pdf","ayetler":{"1":{"1":{"metin","sayfa"}}}}"""
+    dosyalar = []
+    for k in (DEPO_MEALLER, OZEL_KLASOR):
+        if os.path.isdir(k): dosyalar += [os.path.join(k, f) for f in sorted(os.listdir(k)) if f.endswith(".json")]
+    for yol in dosyalar:
+        ad = os.path.basename(yol)
+        ham = open(yol, "rb").read(); ozet = hashlib.sha1(ham).hexdigest()
+        d = json.loads(ham); mid = d["id"]
+        if c.execute("SELECT 1 FROM ozel_meal WHERE id=? AND ozet=?", (mid, ozet)).fetchone(): continue
+        with V._kilit:
+            for tablo in ("meal", "meal_sure", "ozel_sayfa"): c.execute(f"DELETE FROM {tablo} WHERE id=?", (mid,))
+            c.execute("INSERT OR REPLACE INTO meal_kaynak VALUES(?,?,?,?)", (mid, d.get("dil", "Ottoman"), d.get("yazar", mid), d.get("yon", "rtl")))
+            for s, ayetler in d["ayetler"].items():
+                for a, x in ayetler.items():
+                    if x.get("metin"): c.execute("INSERT OR REPLACE INTO meal VALUES(?,?,?,?)", (mid, int(s), int(a), x["metin"]))
+                    if x.get("sayfa"): c.execute("INSERT OR REPLACE INTO ozel_sayfa VALUES(?,?,?,?)", (mid, int(s), int(a), int(x["sayfa"])))
+            c.executemany("INSERT OR REPLACE INTO meal_sure VALUES(?,?)", [(mid, s) for s in range(1, 115)])  # internetten aranmasın
+            c.execute("INSERT OR REPLACE INTO ozel_meal VALUES(?,?,?)", (mid, d.get("pdf"), ozet)); c.commit()
+        print(f"özel meal yüklendi: {mid} ({ad})", flush=True)
+
+@app.get("/api/ozel/{mid}/sayfa/{n}.png")
+def ozel_sayfa(mid: str, n: int):
+    """Özel mealin kaynak PDF'inden sayfa görüntüsü (önbellekli)."""
+    r = tek("SELECT pdf FROM ozel_meal WHERE id=?", mid)
+    if not r or not r["pdf"]: raise HTTPException(404, "Bu meal için PDF tanımlı değil.")
+    pdf = os.path.join(OZEL_KLASOR, os.path.basename(r["pdf"]))
+    if not os.path.exists(pdf): raise HTTPException(404, f"PDF bulunamadı: {os.path.basename(pdf)} dosyasını {OZEL_KLASOR} içine koyun.")
+    onb = os.path.join(OZEL_KLASOR, "onbellek"); os.makedirs(onb, exist_ok=True)
+    hedef = os.path.join(onb, f"{mid}_{n:04d}")
+    if not os.path.exists(hedef + ".png"):
+        subprocess.run(["pdftoppm", "-f", str(n), "-l", str(n), "-r", "150", "-png", "-singlefile", pdf, hedef], check=True, timeout=60)
+    return FileResponse(hedef + ".png", media_type="image/png")
 
 # ---------------- Onaylı meal dosyaları (GitHub'daki onayli/ klasörü) ----------------
 ONAYLI_KLASOR = os.path.join(BURASI, "..", "onayli")
@@ -78,8 +121,16 @@ def sure(s: int, meal: str = ""):
     ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
     ml = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", meal, s)} if meal else {}
     yl = {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum FROM yalin_meal WHERE s=?", s)}
+    tm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s)}
+    for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
+        if a not in yl:
+            if a in tm: yl[a] = {"metin": tm[a], "dipnotlar": "[]", "durum": "temel"}
+            elif a - 1 in tm or (a - 1 in yl and yl[a - 1].get("durum") in ("temel", "birlesik")):
+                yl[a] = {"metin": "", "dipnotlar": "[]", "durum": "birlesik"}
     ns = {r["a"]: r["n"] for r in satirlar("SELECT a, count(*) n FROM notlar WHERE s=? GROUP BY a", s)}
-    return {"s": s, "ad": V.SURE_ADLARI[s - 1], "ayetler": [
+    yon = (tek("SELECT yon FROM meal_kaynak WHERE id=?", meal) or {}).get("yon", "ltr") if meal else "ltr"
+    sayfa = {r["a"]: r["sayfa"] for r in satirlar("SELECT a, sayfa FROM ozel_sayfa WHERE id=? AND s=?", meal, s)} if meal else {}
+    return {"s": s, "ad": V.SURE_ADLARI[s - 1], "meal_yon": yon, "meal_sayfa": sayfa, "ayetler": [
         {"a": a, "arapca": ar.get(a, ""), "meal": ml.get(a, ""), "yalin": (yl.get(a) or {}).get("metin"),
          "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"),
          "yalin_durum": (yl.get(a) or {}).get("durum"), "not": ns.get(a, 0)} for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
@@ -104,7 +155,8 @@ def ayet(s: int, a: int):
             w["lane_var"] = V.lane_bul(c, w["kok"]) is not None
     return {"s": s, "a": a, "sure": V.SURE_ADLARI[s - 1], "arapca": hafs["metin"] if hafs else "", "kiraat": kiraat,
             "kelimeler": list(kelimeler.values()),
-            "yalin": tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a),
+            "yalin": tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a) or
+                     ({"metin": r["metin"], "dipnotlar": "[]", "durum": "temel"} if (r := tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL, s, a)) else None),
             "notlar": satirlar("SELECT * FROM notlar WHERE s=? AND a=? ORDER BY id DESC", s, a)}
 
 # ---------------- Mealler ----------------
@@ -121,8 +173,10 @@ def mealler(s: int, a: int, dil: str = ""):
         if r["id"].endswith("-la") and r["dil"] != "Turkish": continue  # Latin harf çevriyazı kopyaları
         if r["id"].endswith("-la") and r["dil"] == "Turkish": continue
         r["yazar"] = V.YAZAR_ADI.get(r["id"], r["yazar"])
+        sp = tek("SELECT sayfa FROM ozel_sayfa WHERE id=? AND s=? AND a=?", r["id"], s, a)
+        if sp: r["sayfa"] = sp["sayfa"]
         sonuc.setdefault(r["dil"], []).append(r)
-    sira = ["Turkish", "Arabic", "English", "Azerbaijani", "Persian", "Urdu", "French", "German", "Bosnian"]
+    sira = ["Turkish", "Ottoman", "Arabic", "English", "Azerbaijani", "Persian", "Urdu", "French", "German", "Bosnian"]
     return [{"dil": d, "mealler": sonuc[d]} for d in sorted(sonuc, key=lambda d: (sira.index(d) if d in sira else 99, d))]
 
 @app.get("/api/meal-kaynaklari")
@@ -263,13 +317,17 @@ def yalin_ice(d: dict = Body(...)):
     return {"ayet": meal_json_yukle(d)}
 
 @app.get("/api/kitap.epub")
-def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = False):
-    secili = [int(x) for x in sureler.split(",") if x] or sorted({r["s"] for r in satirlar("SELECT DISTINCT s FROM yalin_meal")})
+def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = False, temel: bool = True):
+    try: secili = V.sure_listesi_coz(sureler) if sureler.strip() else (list(range(1, 115)) if temel else sorted({r["s"] for r in satirlar("SELECT DISTINCT s FROM yalin_meal")}))
+    except ValueError as e: raise HTTPException(400, str(e))
     bilgi = {r["s"]: r["ad_ar"] for r in satirlar("SELECT * FROM sure_bilgi")}
     kitap_s = []
     for s in secili:
         ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
         yl = {r["a"]: r for r in satirlar("SELECT * FROM yalin_meal WHERE s=?" + (" AND durum='onayli'" if sadece_onayli else ""), s)}
+        if temel and not sadece_onayli:
+            for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s):
+                yl.setdefault(r["a"], {"metin": r["metin"], "dipnotlar": "[]"})
         if not yl: continue
         ayetler, dipnot, no = [], {}, 0
         for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
@@ -284,7 +342,7 @@ def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = F
             ayetler.append({"a": a, "arapca": ar.get(a, ""), "meal": metin})
         kitap_s.append({"s": s, "ad": V.SURE_ADLARI[s - 1], "ad_ar": bilgi.get(s, ""), "ayetler": ayetler, "dipnotlar": dipnot})
     if not kitap_s: raise HTTPException(404, "Kitaba girecek yalın meal yok.")
-    ad = "Yalin_Meal_" + "-".join(str(x["s"]) for x in kitap_s)[:60] + ".epub"
+    ad = "Kuran_Yalin_Meal.epub" if len(kitap_s) == 114 else "Yalin_Meal_" + "-".join(str(x["s"]) for x in kitap_s)[:60] + ".epub"
     return Response(kitap.epub_yap(kitap_s, arapca=arapca), media_type="application/epub+zip", headers={"Content-Disposition": f'attachment; filename="{ad}"'})
 
 # ---------------- Yapay zekâ: görüş analizi, yalın meal önerisi, Lane çevirisi ----------------
@@ -492,6 +550,10 @@ def karsilastir(s: int, a: int, dil: str = "Turkish"):
 
 
 # ---------------- İniş: nerede/ne zaman indi, sebeb-i nüzûl ----------------
+_NUZUL_TR = re.compile(r"(n[üuû]z[uûü]l|nazil ol|hakkında in|üzerine in|indirildi[ğg]i|bu âyet[^.]{0,40}(indi|nazil))", re.I)
+_SURE_BASI = re.compile(r"\((Mekke|Medine)[’']?de inmiştir\. ?\d+ âyettir\)", re.I)
+TR_ESBAB = [("turkish-tafsir-as-saadi-turkish", "Sa'dî Tefsiri (Türkçe)"), ("turkish-mokhtasar", "el-Muhtasar (Türkçe)"), ("tr-tafsir-ibne-kathir", "İbn Kesîr (Türkçe özet)")]
+
 _NUZUL_RE = re.compile(r"(سبب\s*نزول|نزلت|أنزلت|نزل(?:ت)?\s+(?:هذه|فيه|في)|فأنزل\s+الله)")
 
 @app.get("/api/ayet/{s}/{a}/inis")
@@ -516,4 +578,33 @@ def inis(s: int, a: int):
             yil, tur, ad = V.TEFSIR_BILGI.get(slug, (9999, "", slug))
             sonuc["rivayetler"].append({"slug": slug, "ad": ad, "yil": yil, "parcalar": parca})
     sonuc["rivayetler"].sort(key=lambda x: x["yil"])
+    # Türkçe kaynaklar
+    sonuc["turkce"] = []
+    for slug, ad in TR_ESBAB:
+        r = tek("SELECT metin FROM tefsir WHERE slug=? AND s=? AND a=?", slug, s, a)
+        if not r: continue
+        metin = _SURE_BASI.sub("", re.sub(r"\s+", " ", V.ac(r["metin"]))); parca, son = [], -1
+        for m in _NUZUL_TR.finditer(metin):
+            if m.start() < son: continue
+            bas = max(0, max(metin.rfind(".", 0, m.start()), metin.rfind("!", 0, m.start()), metin.rfind("?", 0, m.start())) + 1)
+            bit = metin.find(".", min(len(metin), m.end() + 420)); bit = len(metin) if bit < 0 else bit + 1
+            parca.append(metin[bas:bit].strip()); son = bit
+            if len(parca) >= 3: break
+        if parca: sonuc["turkce"].append({"ad": ad, "parcalar": parca})
+    # daha önce yapılmış Türkçe çeviri
+    tr = tek("SELECT metin FROM ceviri_onbellek WHERE anahtar=?", f"nuzul:{s}:{a}")
+    sonuc["ceviri"] = tr["metin"] if tr else None
     return sonuc
+
+@app.post("/api/ayet/{s}/{a}/inis-cevir")
+def inis_cevir(s: int, a: int):
+    """Vâhidî ve rivâyet tefsirlerindeki iniş sebebi kısımlarını Türkçeye çevirir (bir kez, önbellekli)."""
+    d = inis(s, a)
+    kaynak = ([f"[Vâhidî, Esbâbü'n-Nüzûl]\n{d['vahidi']}"] if d["vahidi"] else []) + \
+             [f"[{r['ad']}]\n" + "\n".join(r["parcalar"]) for r in d["rivayetler"]]
+    if not kaynak: raise HTTPException(404, "Bu ayet için çevrilecek iniş sebebi rivayeti yok.")
+    t = claude("Klasik Arapça ve İngilizce tefsir metinlerini sade, doğru Türkçeye çeviren bir uzmansın. Senet zincirlerini (haddesenâ… an…) kısalt: sadece ilk ravi ve sahâbîyi yaz. "
+               "Kaynak adlarını başlık olarak koru. Uydurma ekleme yapma. Sonunda iki üç cümlelik 'Özet' ver: rivayetler ne diyor, ayrıştıkları nokta var mı.",
+               f"Ayet {s}:{a} ({V.SURE_ADLARI[s-1]}) için iniş sebebi rivayetleri:\n\n" + "\n\n".join(kaynak)[:24000], 3500)
+    with V._kilit: c.execute("INSERT OR REPLACE INTO ceviri_onbellek VALUES(?,?)", (f"nuzul:{s}:{a}", t)); c.commit()
+    return {"metin": t}

@@ -36,6 +36,7 @@ KURALLAR (kesin):
 4. Uzun açıklama KAÇINILMAZSA ilgili kelimenin hemen arkasına [1], [2] konur, açıklama dipnota yazılır. Dipnot sadece gerçekten gerekiyorsa: çok anlamlı kök, hurûf-u mukattaa, ciddi müfessir ihtilafı, yanlış anlaşılmaya açık terim. Dipnotlar kısa, bilgi yoğun; gerektiğinde kökü ve hangi müfessirin ne dediğini anar.
 5. Ayet numarası yazma. Her ayetin meali kendi içinde okunabilir olsun ama cümle bir sonraki ayete taşıyorsa doğal biçimde taşısın.
 6. Allah'ın isimlerinde (Rahmân, Rahîm, Rab) yerleşik Türkçe kullanım korunur.
+7. "ZAHİR'İN MEALİ" verilmişse temel metin odur: kök, lügat ve tefsirler gerçekten gerektirmedikçe onun kelime tercihlerini ve üslubunu koru; sadece hatalı, eksik ya da yalın olmayan yerleri düzelt. Parantez içi Arapça çeviriyazı kullanma.
 
 ÜSLUP ÖRNEĞİ (onaylanmış, Kalem 1-7):
 Nûn[1]. Kaleme ve satır satır yazdıklarına[2] andolsun ki,
@@ -73,6 +74,8 @@ def ayet_paketi(c, s, a):
     for slug, n in TEFSIR:
         t = tef(slug, n)
         if t: out.append(f"[{V.TEFSIR_BILGI.get(slug, (0, 0, slug))[2]}] {t}")
+    r = c.execute("SELECT metin FROM meal WHERE id='zahir' AND s=? AND a=?", (s, a)).fetchone()
+    if r: out.append(f"ZAHİR'İN MEALİ (temel metin): {r['metin']}")
     for grup, ids in (("Türkçe mealler", TR_MEAL), ("İngilizce mealler", EN_MEAL)):
         satir = []
         for mid in ids:

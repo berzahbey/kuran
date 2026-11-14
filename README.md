@@ -32,6 +32,11 @@ Sunucuda `docker compose pull && docker compose up -d` (ZimaOS'ta uygulamanın "
 ## Kaynaklar yerelde, eksikler internetten
 Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemiş bir şey açılırsa o an internetten çekilir ve kaydedilir.
 
+## Mealler
+- **Zahir'in meali** (`mealler/zahir.json`): ana gövdenin temeli. Onaylı/yeni yalın meal olmayan her ayette okunan metin budur. Parantez içindeki Arapça çeviriyazılar çıkarıldı, Türkçe açıklamalar korundu. Standart numaralamadan ayrıldığı 6 yerde (iki kısa ayetin birlikte çevrildiği yerler) standart numaraya hizalandı.
+- **Osmanlıca meal (OCR taslağı)** (`mealler/osmanlica_ocr.json`): taranmış 605 sayfalık PDF'ten OCR ile çıkarıldı; ayetlerin ~%83'ü ayrı, kalanı önceki ayetle birlikte. Her ayette "kitapta s. N" ile kitabın aslı açılır; bunun için PDF'i sunucuda `veri/ozel/Kuran_Osmanlica_Meal.pdf` olarak koyun.
+- Yeni meal eklemek: aynı biçimde bir JSON'u `mealler/` (depo) veya `veri/ozel/` (sunucu) klasörüne koymak yeterli.
+
 ## Yalın meal: üretim ve inceleme
 1. **Taslak (ücretsiz yapay zekâ):** `docker-compose.yml` içine ücretsiz bir anahtar girin (ör. https://aistudio.google.com → *Get API key*), uygulamayı yeniden başlatın, **Kaynaklar → Yalın meali üret**. Her ayet için kök/lügat, garîb eserleri, 9 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meal okunur; onaylı Kalem 1-7 üslubuyla taslak yazılır. Günlük ücretsiz kota dolarsa bekler, ertesi gün kendiliğinden devam eder. Onaylı veya elle düzeltilmiş ayetlere dokunmaz.
    Desteklenenler: Gemini (varsayılan), OpenAI uyumlu her uç nokta (OpenRouter, Groq, Cerebras, yerel Ollama), Anthropic.
