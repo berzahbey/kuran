@@ -145,13 +145,13 @@
   },
   {
    "a": 18,
-   "meal": "ve istisna[1] yapmıyorlardı.",
+   "meal": "ve inşallah[1] demiyorlardı.",
    "dipnotlar": [
-    "İstisna: Taberî ve Zemahşerî'ye göre \"inşallah\" demeyip işi Allah'ın dilemesine bağlamamaları; bir görüşe göre de ürünün yoksul payını ayırmamaları."
+    "Arapçası istisna: işi Allah'ın dilemesine bağlamak, yani \"inşallah\" demek (Taberî, Zemahşerî). Bir görüşe göre de ürünün miskin payını ayırmamaları kastedilir."
    ],
-   "meal_osm": "و استثنا[1] یاپمییورلردی.",
+   "meal_osm": "و ان شاء اللّه[1] دیمییورلردی.",
    "dipnotlar_osm": [
-    "استثنا: طبری و زمخشری‌یه كوره \"ان شاء اللّه\" دیمه‌یوب ایشی اللّهڭ دیلمه‌سنه باغلامامه‌لری؛ بر كوروشه كوره ده اورونڭ یوقسول پاینی آییرمامه‌لری."
+    "عربجه‌سی استثنا: ایشی اللّهڭ دیلمه‌سنه باغلامق، یعنی \"ان شاء اللّه\" دیمك (طبری، زمخشری). بر كوروشه كوره ده اورونڭ مسكین پاینی آییرمامه‌لری قصد ایدیلیر."
    ]
   },
   {
@@ -329,13 +329,13 @@
   },
   {
    "a": 42,
-   "meal": "İncikten açılacağı[1] gün secdeye çağrılırlar, fakat takat getiremezler.",
+   "meal": "Baldırın açılacağı[1] gün secdeye çağrılırlar, fakat takat getiremezler.",
    "dipnotlar": [
-    "Yükşefu an sâk: kelimesi kelimesine \"incikten açılır\". Araplar işin çok çetinleştiğini \"savaş baldırını açtı\" diye anlatır; İbn Abbas ve Taberî ayeti bu deyimle, kıyametin dehşetiyle açıklar. Buhârî'deki bir hadiste ise (Tefsîr, 68. sure) Rabbin sâkını açacağı ve müminlerin secdeye kapanacağı bildirilir."
+    "Yükşefu an sâk: kelimesi kelimesine \"baldır açılır\". Araplar işin çok çetinleştiğini \"savaş baldırını açtı\" diye anlatır; İbn Abbas ve Taberî ayeti bu deyimle, kıyametin dehşetiyle açıklar. Buhârî'deki bir hadiste ise (Tefsîr, 68. sure) Rabbin sâkını açacağı ve müminlerin secdeye kapanacağı bildirilir."
    ],
-   "meal_osm": "اینجیكدن آچیلاجغی[1] كون سجده‌یه چاغریلیرلر، فقط طاقت كتیره‌مزلر.",
+   "meal_osm": "بالدیرڭ آچیلاجغی[1] كون سجده‌یه چاغریلیرلر، فقط طاقت كتیره‌مزلر.",
    "dipnotlar_osm": [
-    "يُكْشَفُ عَنْ سَاقٍ: كلمه‌سی كلمه‌سنه \"اینجیكدن آچیلیر\". عربلر ایشڭ چوق چتینلشدیكنی \"صاواش بالدیرینی آچدی\" دییه آڭلاتیر؛ ابن عبّاس و طبری آیتی بو دییمله، قیامتڭ دهشتیله آچیقلار. بخاریده‌كی بر حدیثده ایسه (تفسیر، ٦٨ نجی سوره) ربّڭ ساقنی آچاجغی و مؤمنلرڭ سجده‌یه قاپاناجغی بیلدیریلیر."
+    "يُكْشَفُ عَنْ سَاقٍ: كلمه‌سی كلمه‌سنه \"بالدیر آچیلیر\". عربلر ایشڭ چوق چتینلشدیكنی \"صاواش بالدیرینی آچدی\" دییه آڭلاتیر؛ ابن عبّاس و طبری آیتی بو دییمله، قیامتڭ دهشتیله آچیقلار. بخاریده‌كی بر حدیثده ایسه (تفسیر، ٦٨ نجی سوره) ربّڭ ساقنی آچاجغی و مؤمنلرڭ سجده‌یه قاپاناجغی بیلدیریلیر."
    ]
   },
   {
