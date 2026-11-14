@@ -1,0 +1,7 @@
+veri/
+__pycache__/
+*.db
+*.db-*
+*.log
+.DS_Store
+.git/

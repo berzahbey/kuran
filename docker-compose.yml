@@ -1,0 +1,20 @@
+# Dedplay Kur'an Çalışma — ZimaOS / Docker kurulumu
+# ZimaOS: App Store > Custom Install > Import (bu dosyayı yapıştırın)
+# Komut satırı: docker compose up -d
+name: kuran-calisma
+services:
+  kuran-calisma:
+    image: ghcr.io/berzahbey/kuran:latest      # GitHub'a her gönderimde otomatik derlenir
+    # Derlenmiş imaj yerine doğrudan GitHub'daki koddan derlemek için üstteki satırı silip şunu açın:
+    # build: https://github.com/berzahbey/kuran.git#main
+    container_name: kuran-calisma
+    restart: unless-stopped
+    ports:
+      - "8120:8120"
+    volumes:
+      - /DATA/AppData/kuran-calisma/veri:/veri   # tüm külliyat + notlar + yalın meal (~2.3 GB)
+    environment:
+      KURAN_OTOMATIK_INDIR: "1"          # ilk açılışta tüm kaynakları arka planda indirir (~20 dk)
+      KURAN_MEAL: tur-elmalilihamdiya    # ana metinde varsayılan meal
+      ANTHROPIC_API_KEY: ""              # görüş analizi, yalın meal önerisi, lügat çevirisi için
+      KURAN_MODEL: claude-sonnet-4-5
