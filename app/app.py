@@ -98,6 +98,7 @@ def mealler(s: int, a: int, dil: str = ""):
                       + (" AND k.dil=?" if dil else ""), s, a, *([dil] if dil else [])):
         if r["id"].endswith("-la") and r["dil"] != "Turkish": continue  # Latin harf çevriyazı kopyaları
         if r["id"].endswith("-la") and r["dil"] == "Turkish": continue
+        r["yazar"] = V.YAZAR_ADI.get(r["id"], r["yazar"])
         sonuc.setdefault(r["dil"], []).append(r)
     sira = ["Turkish", "Arabic", "English", "Azerbaijani", "Persian", "Urdu", "French", "German", "Bosnian"]
     return [{"dil": d, "mealler": sonuc[d]} for d in sorted(sonuc, key=lambda d: (sira.index(d) if d in sira else 99, d))]
@@ -105,7 +106,9 @@ def mealler(s: int, a: int, dil: str = ""):
 @app.get("/api/meal-kaynaklari")
 def meal_kaynaklari():
     V.meal_kaynaklari_yukle(c)
-    return satirlar("SELECT * FROM meal_kaynak WHERE id NOT LIKE '%-la' ORDER BY dil, yazar")
+    r = satirlar("SELECT * FROM meal_kaynak WHERE id NOT LIKE '%-la' ORDER BY dil, yazar")
+    for x in r: x["yazar"] = V.YAZAR_ADI.get(x["id"], x["yazar"])
+    return r
 
 # ---------------- Tefsirler ----------------
 def tefsir_sure_hazirla(s):
@@ -340,6 +343,9 @@ def ara(q: str, meal: str = VARSAYILAN_MEAL, limit: int = 200):
 
 # ---------------- Kaynak durumu / toplu indirme ----------------
 _kurulum = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "kurulum.log")}
+
+@app.get("/api/ayarlar")
+def ayarlar(): return {"yapay_zeka": bool(API_KEY)}
 
 @app.get("/api/durum")
 def durum():

@@ -248,3 +248,15 @@ NUZUL_SIRASI = [5,87,89,92,112,55,39,88,113,51,52,53,96,72,54,70,50,69,44,45,73,
 # Sebeb-i nüzûl ararken bakılacak rivâyet ağırlıklı tefsirler
 ESBAB_TEFSIRLER = ["ar-tafsir-al-tabari", "tafsir-ibn-abi-hatim", "al-wajiz-wahidi", "al-basit", "ar-tafsir-al-baghawi", "ar-tafseer-al-qurtubi",
                    "ar-tafsir-ibn-kathir", "al-durr-al-manthur", "tafsir-al-samarqandi", "tafsir-ibn-al-jawzi", "ar-tafsir-al-jalalayn"]
+
+# Meal yazar adlarının düzgün Türkçe yazımı (kaynak verideki bozuk ASCII adlar için)
+YAZAR_ADI = {"tur-abdulbakigolpin": "Abdülbâki Gölpınarlı", "tur-ademugur": "Adem Uğur", "tur-alibulac": "Ali Bulaç",
+ "tur-alifikriyavuz": "Ali Fikri Yavuz", "tur-celalyldrm": "Celal Yıldırım", "tur-diyanetisleri": "Diyanet İşleri",
+ "tur-diyanetisleri1": "Diyanet İşleri (yeni)", "tur-diyanetvakfi": "Diyanet Vakfı", "tur-edipyuksel": "Edip Yüksel",
+ "tur-elmalilihamdiya": "Elmalılı Hamdi Yazır", "tur-elmallsadelesti": "Elmalılı (sadeleştirilmiş)", "tur-elmallsadelesti1": "Elmalılı (sadeleştirilmiş 2)",
+ "tur-fizilalilkuran": "Fî Zılâli'l-Kur'an", "tur-gultekinonan": "Gültekin Onan", "tur-hasanbasricanta": "Hasan Basri Çantay",
+ "tur-ibnikesir": "İbn Kesir", "tur-iskenderalimihr": "İskender Ali Mihr", "tur-muhammedesed": "Muhammed Esed",
+ "tur-muhammetabay": "Muhammet Abay", "tur-muslimshahin": "Müslim Şahin", "tur-sabanpiris": "Şaban Piriş",
+ "tur-shabanbritch": "Şaban Britch", "tur-suatyildirim": "Suat Yıldırım", "tur-suleymanates": "Süleyman Ateş",
+ "tur-tefhimulkuran": "Tefhîmu'l-Kur'an (Mevdûdî)", "tur-wwwislamhouseco": "IslamHouse", "tur-yasarnuriozturk": "Yaşar Nuri Öztürk",
+ "tur-yasarnuriozturk1": "Yaşar Nuri Öztürk (2)", "tur-ynozturk": "Yaşar Nuri Öztürk (3)"}
