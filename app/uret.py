@@ -6,18 +6,16 @@ yapay zekâ Zahir'in kurallarıyla (ve onaylı Kalem 1-7 üslubuyla) en yalın T
 - Sure sure, 5'er ayetlik bölümler hâlinde; önceki ayetlerin meali bağlam olarak verilir.
 - Devam ettirilebilir: meali olan ayet atlanır (onaylı veya elle düzeltilmiş ayetlere asla dokunulmaz).
 - Sonuçlar 'taslak' olarak kaydedilir.
+- Ücretsiz yapay zekâ ile çalışır (Google Gemini ücretsiz katmanı vb., bkz. yz.py). Günlük kota dolarsa bekler, kota açılınca kendiliğinden devam eder.
 
 Kullanım:
   python uret.py                       # tüm Kur'an (1-114)
   python uret.py --sureler 68,112-114  # seçili sureler
   python uret.py --sureler 1 --kuru    # sadece paketi göster, yapay zekâya gönderme
 """
-import argparse, concurrent.futures as cf, json, os, re, sys, time, urllib.request
+import argparse, concurrent.futures as cf, json, os, re, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import veri as V
-
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL = os.environ.get("KURAN_URETIM_MODEL") or os.environ.get("KURAN_MODEL", "claude-sonnet-4-5")
+import veri as V, yz
 
 # Pakete giren kaynaklar (seçici: hem isabet hem maliyet için)
 LUGAT = [("asseraj-fi-bayan-gharib-alquran", 900), ("al-muyassar-fi-al-gharib", 900)]
@@ -53,9 +51,7 @@ Hanginizin aklı çelinmiş[1] olduğunu.
 {"ayetler":[{"a":<ayet no>,"meal":"...","dipnotlar":["[1]'in metni","[2]'nin metni"]}]}
 Dipnot numaraları her ayette 1'den başlar."""
 
-def _tr_gram(etiket):
-    m = {"N": "isim", "V": "fiil", "P": "edat"}
-    return etiket
+OLCEK = 1.0  # --paket kucuk/orta/tam
 
 def ayet_paketi(c, s, a):
     ar = c.execute("SELECT metin FROM ayet WHERE s=? AND a=? AND kaynak='ara-quranuthmanihaf'", (s, a)).fetchone()
@@ -69,7 +65,7 @@ def ayet_paketi(c, s, a):
     def tef(slug, n):
         V.tefsir_sure_yukle(c, slug, s)
         r = c.execute("SELECT metin FROM tefsir WHERE slug=? AND s=? AND a=?", (slug, s, a)).fetchone()
-        return re.sub(r"\s+", " ", V.ac(r["metin"]))[:n] if r else None
+        return re.sub(r"\s+", " ", V.ac(r["metin"]))[:int(n * OLCEK)] if r else None
     out = [f"=== AYET {s}:{a} ===", f"Arapça: {ar['metin'] if ar else ''}", f"Kelimeler: {kelimeler}"]
     for slug, n in LUGAT:
         t = tef(slug, n)
@@ -85,24 +81,6 @@ def ayet_paketi(c, s, a):
             if r: satir.append(f"- {r['yazar']}: {r['metin']}")
         out.append(f"{grup}:\n" + "\n".join(satir))
     return "\n".join(out)
-
-def claude(mesaj, max_tokens=4000, deneme=4):
-    govde = json.dumps({"model": MODEL, "max_tokens": max_tokens, "system": SISTEM,
-                        "messages": [{"role": "user", "content": mesaj}]}).encode()
-    for i in range(deneme):
-        try:
-            req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=govde, method="POST",
-                headers={"x-api-key": API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"})
-            with urllib.request.urlopen(req, timeout=600) as r:
-                d = json.loads(r.read())
-            return "".join(b.get("text", "") for b in d["content"]), d.get("usage", {})
-        except urllib.error.HTTPError as e:
-            hata = e.read().decode()[:300]
-            if e.code in (429, 500, 502, 503, 529): time.sleep(20 * (i + 1)); continue
-            raise RuntimeError(f"API {e.code}: {hata}")
-        except Exception as e:
-            time.sleep(10 * (i + 1)); hata = str(e)
-    raise RuntimeError("API yanıt vermedi: " + hata)
 
 def bolumle(ayetler, n=5):
     for i in range(0, len(ayetler), n): yield ayetler[i:i + n]
@@ -121,8 +99,12 @@ def sure_uret(c, s, bolum=5, kuru=False, log=print):
                  + f"\n\nGÖREV: {', '.join(f'{s}:{a}' for a in grup)} ayetlerinin yalın mealini yaz.")
         if kuru:
             print(mesaj); print(f"\n--- paket: {len(mesaj)} karakter (~{len(mesaj)//3} token) ---"); return 0, {}
-        metin, kullanim = claude(mesaj)
-        for k in toplam: toplam[k] += kullanim.get(k, 0)
+        while True:
+            try:
+                metin = yz.sohbet(SISTEM, mesaj, 4000, json_cikti=True); break
+            except yz.KotaDoldu:
+                log(f"  günlük kota doldu ({s}. {sure_ad}); 1 saat sonra tekrar denenecek"); time.sleep(3600)
+        toplam["input_tokens"] += len(mesaj) // 3; toplam["output_tokens"] += len(metin) // 3
         m = re.search(r"\{.*\}", metin, re.S)
         try: sonuc = json.loads(m[0])["ayetler"]
         except Exception: log(f"  {s}:{grup} JSON okunamadı, atlandı"); continue
@@ -139,7 +121,8 @@ def sure_uret(c, s, bolum=5, kuru=False, log=print):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sureler", default="1-114")
-    ap.add_argument("--paralel", type=int, default=3, help="aynı anda kaç sure")
+    ap.add_argument("--paralel", type=int, default=1, help="aynı anda kaç sure (ücretsiz katmanda 1)")
+    ap.add_argument("--paket", default="tam", choices=["kucuk", "orta", "tam"], help="kaynak paketi boyutu (ücretsiz katmanda token sınırı düşükse küçültün)")
     ap.add_argument("--bolum", type=int, default=5, help="bir istekte kaç ayet")
     ap.add_argument("--kuru", action="store_true", help="yapay zekâya göndermeden ilk paketi göster")
     a = ap.parse_args()
@@ -150,16 +133,17 @@ def main():
     c = V.baglan(); V.sema_kur(c)
     c.execute("CREATE TABLE IF NOT EXISTS yalin_meal(s INT, a INT, metin TEXT, dipnotlar TEXT, durum TEXT DEFAULT 'taslak', guncelleme TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(s,a))")
     V.arapca_yukle(c); V.morfoloji_yukle(c); V.meal_kaynaklari_yukle(c); V.tefsir_kaynaklari_yukle(c)
+    global OLCEK; OLCEK = {"kucuk": 0.35, "orta": 0.6, "tam": 1.0}[a.paket]
     if a.kuru: sure_uret(c, sureler[0], a.bolum, kuru=True); return
-    if not API_KEY: sys.exit("ANTHROPIC_API_KEY tanımlı değil.")
+    if not yz.hazir(): sys.exit("Yapay zekâ tanımlı değil (YZ_ANAHTAR).")
     log = lambda *x: print(time.strftime("%H:%M:%S"), *x, flush=True)
-    log(f"Yalın meal üretimi başladı: {len(sureler)} sure, model {MODEL}")
+    log(f"Yalın meal üretimi başladı: {len(sureler)} sure · {yz.SAGLAYICI} / {yz.MODEL} · dakikada {yz.DAKIKADA:g} istek")
     genel = {"input_tokens": 0, "output_tokens": 0}
     def is_(s):
         try:
             n, k = sure_uret(c, s, a.bolum, log=log)
             for x in genel: genel[x] += k.get(x, 0)
-            log(f"{s}. {V.SURE_ADLARI[s-1]}: {n} ayet yazıldı · toplam token girdi {genel['input_tokens']:,} / çıktı {genel['output_tokens']:,}")
+            log(f"{s}. {V.SURE_ADLARI[s-1]}: {n} ayet yazıldı · hazır: {c.execute('SELECT count(*) FROM yalin_meal').fetchone()[0]}/6236")
         except Exception as e:
             log(f"{s}. {V.SURE_ADLARI[s-1]}: HATA {e}")
     with cf.ThreadPoolExecutor(a.paralel) as ex: list(ex.map(is_, sureler))

@@ -15,6 +15,13 @@ services:
       - /DATA/AppData/kuran-calisma/veri:/veri   # tüm külliyat + notlar + yalın meal (~2.3 GB)
     environment:
       KURAN_OTOMATIK_INDIR: "1"          # ilk açılışta tüm kaynakları arka planda indirir (~20 dk)
-      KURAN_MEAL: tur-elmalilihamdiya    # ana metinde varsayılan meal
-      ANTHROPIC_API_KEY: ""              # görüş analizi, yalın meal önerisi, lügat çevirisi için
-      KURAN_MODEL: claude-sonnet-4-5
+      KURAN_MEAL: tur-elmalilihamdiya
+      # --- Yapay zekâ (yalın meal taslağı için; boş bırakılırsa uygulama yine tam çalışır) ---
+      # Ücretsiz: https://aistudio.google.com → "Get API key" → anahtarı aşağıya yapıştırın
+      YZ_SAGLAYICI: gemini               # gemini | openai (OpenRouter/Groq/Ollama) | anthropic
+      YZ_ANAHTAR: ""
+      YZ_MODEL: gemini-flash-latest      # AI Studio'daki ücretsiz modellerden biri
+      YZ_DAKIKADA: "8"                   # ücretsiz katman için dakikada istek sınırı
+      URETIM_PAKET: tam                  # kaynak paketi: tam | orta | kucuk (token sınırı hatası alırsanız küçültün)
+      # OpenRouter örneği:  YZ_SAGLAYICI: openai  YZ_URL: https://openrouter.ai/api/v1/chat/completions  YZ_MODEL: <ücretsiz model>:free
+      # Yerel Ollama örneği: YZ_SAGLAYICI: openai  YZ_URL: http://dedplay:11434/v1/chat/completions  YZ_MODEL: qwen2.5:14b

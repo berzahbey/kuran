@@ -160,7 +160,7 @@ async function sureAc(s,a=null){
   const d=await api(`/api/sure/${s}?meal=${D.meal}`); const b=D.sureler[s-1]; const hazir=d.ayetler.filter(x=>x.yalin).length;
   const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
   $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${esc(d.ad)} Sûresi</h2>
-   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet${hazir<b.ayet?` · yalın meal ${hazir}/${b.ayet} hazır`:""} · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a></span></div>
+   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet${hazir<b.ayet?` · yalın meal ${hazir}/${b.ayet} hazır`:""} · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a> · <a href="/api/yalin/disa-aktar/${s}" title="Bu surenin mealini inceleme/düzeltme için JSON olarak indir">inceleme dosyası ⇩</a></span></div>
    ${s!==1&&s!==9?'<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr">Rahmân ve Rahîm olan Allah\'ın adıyla</div></div><div class="besmele-sade">Rahmân ve Rahîm olan Allah\'ın adıyla</div>':""}`+
    d.ayetler.map(x=>`<div class="ayet" id="ay${x.a}" onclick="ayetSec(${s},${x.a})">
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
@@ -353,12 +353,18 @@ async function kaynakAc(){const d=await api("/api/durum");const y=(a,b)=>b?Math.
   if(d.kurulum_calisiyor)setTimeout(()=>{if($("#modalArka").style.display==="flex"&&$("#modalIcerik").innerHTML.includes("Kaynaklar"))kaynakAc()},4000)}
 
 async function uretimCiz(){const u=await api("/api/uretim");const k=$("#uretimKutu");if(!k)return;
+  const b=await api("/api/ayarlar");
   k.innerHTML=`<p><b>${u.hazir.toLocaleString()} / ${u.toplam.toLocaleString()}</b> ayetin yalın meali hazır (${u.onayli} onaylı).
-   Yapay zekâ her ayet için kök/lügat, 11 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meali okuyup en yalın meali ve gerekli dipnotları yazar.
-   Meali olan ayetlere (onaylı veya sizin düzelttikleriniz) dokunmaz; yarıda kalırsa kaldığı yerden devam eder. Tüm Kur'an için yaklaşık 35–60 milyon girdi token'ı harcar.</p>
-   ${u.yapay_zeka?`<input class="tam" id="uretSure" placeholder="Sureler (boş = tümü, örn. 68 veya 78-114)" style="max-width:320px"> <button class="btn" ${u.calisiyor?"disabled":""} onclick="api('/api/uretim',{method:'POST',body:JSON.stringify({sureler:$('#uretSure').value.trim()})}).then(uretimCiz)">${u.calisiyor?"Üretiliyor…":"Yalın meali üret"}</button>`:"<p><b>ANTHROPIC_API_KEY tanımlı değil.</b> Anahtarı ekleyip uygulamayı yeniden başlatınca bu düğme açılır.</p>"}
+   Yapay zekâ her ayet için kök/lügat, 9 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meali okuyup taslak meali ve gerekli dipnotları yazar.
+   Meali olan ayetlere dokunmaz. Ücretsiz katmanın günlük kotası dolarsa bekler, ertesi gün kendiliğinden devam eder.</p>
+   ${u.yapay_zeka?`<p>Kullanılan: <b>${esc(b.saglayici)} · ${esc(b.model)}</b></p><input class="tam" id="uretSure" placeholder="Sureler (boş = tümü, örn. 68 veya 78-114)" style="max-width:320px"> <button class="btn" ${u.calisiyor?"disabled":""} onclick="api('/api/uretim',{method:'POST',body:JSON.stringify({sureler:$('#uretSure').value.trim()})}).then(uretimCiz)">${u.calisiyor?"Üretiliyor…":"Yalın meali üret"}</button>`:"<p><b>Yapay zekâ tanımlı değil.</b> docker-compose.yml içinde <code>YZ_ANAHTAR</code> (ör. Google AI Studio'dan ücretsiz Gemini anahtarı) girip uygulamayı yeniden başlatınca bu düğme açılır.</p>"}
+   <p style="margin-top:14px"><b>Düzeltilmiş meal dosyası içe aktar</b> (inceleme dosyası biçiminde .json): <input type="file" accept=".json" onchange="iceAktar(this)"></p>
    ${u.log?`<pre class="log">${esc(u.log)}</pre>`:""}`;
   if(u.calisiyor)setTimeout(()=>{if($("#uretimKutu"))uretimCiz()},5000)}
+
+async function iceAktar(inp){const f=inp.files[0];if(!f)return;try{const d=JSON.parse(await f.text());const r=await api("/api/yalin/ice-aktar",{method:"POST",body:JSON.stringify(d)});
+  alertYok(`${r.ayet} ayet içe aktarıldı.`);D.sureler=await api("/api/sureler");sureListe();if(D.s===d.sure)sureAc(D.s);uretimCiz()}catch(e){alertYok("Hata: "+e.message)}}
+function alertYok(m){const k=$("#uretimKutu");if(k)k.insertAdjacentHTML("afterbegin",`<p class="not">${esc(m)}</p>`)}
 
 // ---- Arama ----
 $("#ara").onkeydown=async e=>{if(e.key!=="Enter")return;const q=e.target.value.trim();if(!q)return;

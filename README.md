@@ -30,8 +30,13 @@ Sunucuda `docker compose pull && docker compose up -d` (ZimaOS'ta uygulamanın "
 ## Kaynaklar yerelde, eksikler internetten
 Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemiş bir şey açılırsa o an internetten çekilir ve kaydedilir.
 
-## Yalın meal üretimi (bir seferlik)
-**Kaynaklar → Yalın meali üret** (veya `python app/uret.py --sureler 1-114`). Her ayet için kök/lügat, garîb eserleri, 9 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meal okunur. Onaylı Kalem 1-7 üslubuyla yazılır, 'taslak' olarak kaydedilir. Meali olan ayete (onaylı veya elle düzeltilmiş) dokunulmaz, yarıda kalırsa kaldığı yerden devam eder. `ANTHROPIC_API_KEY` gerekir. Anahtar yoksa uygulamanın geri kalanı aynen çalışır.
+## Yalın meal: üretim ve inceleme
+1. **Taslak (ücretsiz yapay zekâ):** `docker-compose.yml` içine ücretsiz bir anahtar girin (ör. https://aistudio.google.com → *Get API key*), uygulamayı yeniden başlatın, **Kaynaklar → Yalın meali üret**. Her ayet için kök/lügat, garîb eserleri, 9 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meal okunur; onaylı Kalem 1-7 üslubuyla taslak yazılır. Günlük ücretsiz kota dolarsa bekler, ertesi gün kendiliğinden devam eder. Onaylı veya elle düzeltilmiş ayetlere dokunmaz.
+   Desteklenenler: Gemini (varsayılan), OpenAI uyumlu her uç nokta (OpenRouter, Groq, Cerebras, yerel Ollama), Anthropic.
+2. **İnceleme:** Sure başlığındaki **inceleme dosyası ⇩** ile surenin JSON'unu indirin, Claude'a verin. Claude düzeltir; düzeltilmiş dosya `onayli/sure_XXX.json` olarak bu depoya eklenir.
+3. **Onay:** Uygulama güncellenince `onayli/` klasöründeki yeni/değişen dosyaları kendiliğinden yükler. Elle yüklemek için: **Kaynaklar → Düzeltilmiş meal dosyası içe aktar**.
+
+Komut satırı: `python app/uret.py --sureler 78-114` · paket boyutu `--paket orta|kucuk` · denemek için `--kuru`.
 
 ## Veri kaynakları
 - Arapça metin, 8 kıraat, 492 meal: github.com/fawazahmed0/quran-api
@@ -44,6 +49,6 @@ Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemi
 Mealler ve modern tefsirlerin bir kısmı telif hakkına tabidir; uygulama kişisel çalışma içindir.
 
 ## Depo yapısı
-- `app/`: uygulama (FastAPI + SQLite + web arayüzü), `kur.py` veri kurulumu, `uret.py` yalın meal üretimi, `kitap.py` EPUB
-- `ornek/`: onaylı yalın mealler (ilk açılışta içeri alınır)
+- `app/`: uygulama (FastAPI + SQLite + web arayüzü), `kur.py` veri kurulumu, `uret.py` yalın meal üretimi, `kitap.py` EPUB, `yz.py` yapay zekâ sağlayıcıları
+- `onayli/`: Claude ile incelenip onaylanmış yalın mealler (`sure_068.json` …); uygulama kendiliğinden yükler
 - `araclar/`: komut satırı araçları

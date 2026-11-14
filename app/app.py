@@ -1,10 +1,10 @@
 """Dedplay Kur'an Çalışma — API sunucusu."""
-import concurrent.futures as cf, json, os, re, subprocess, sys, threading, urllib.request
+import concurrent.futures as cf, json, os, re, subprocess, sys, threading, urllib.request, urllib.parse
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import FileResponse, Response, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 sys.path.insert(0, os.path.dirname(__file__))
-import veri as V, kitap
+import veri as V, kitap, yz, hashlib
 
 app = FastAPI(title="Dedplay Kur'an Çalışma")
 BURASI = os.path.dirname(os.path.abspath(__file__))
@@ -13,8 +13,6 @@ c.executescript("""
 CREATE TABLE IF NOT EXISTS yalin_meal(s INT, a INT, metin TEXT, dipnotlar TEXT, durum TEXT DEFAULT 'taslak', guncelleme TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(s,a));
 CREATE TABLE IF NOT EXISTS sure_bilgi(s INT PRIMARY KEY, ad_ar TEXT, nuzul TEXT);
 """)
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL = os.environ.get("KURAN_MODEL", "claude-sonnet-4-5")
 VARSAYILAN_MEAL = os.environ.get("KURAN_MEAL", "tur-elmalilihamdiya")
 
 def satirlar(sql, *p): return [dict(r) for r in c.execute(sql, p).fetchall()]
@@ -30,14 +28,38 @@ def ilk_kurulum():
             with V._kilit:
                 c.executemany("INSERT OR REPLACE INTO sure_bilgi VALUES(?,?,?)",
                               [(x["chapter"], x["arabicname"], x["revelation"]) for x in json.loads(t)["chapters"]]); c.commit()
-    # onaylı pilot mealleri (Kalem 1-7) ilk açılışta içeri al
-    if not c.execute("SELECT 1 FROM yalin_meal LIMIT 1").fetchone():
-        for f in sorted(os.listdir(os.path.join(BURASI, "..", "ornek"))) if os.path.isdir(os.path.join(BURASI, "..", "ornek")) else []:
-            subprocess.run([sys.executable, os.path.join(BURASI, "pilot_yukle.py"), os.path.join(BURASI, "..", "ornek", f)])
+    onayli_yukle()
     # tüm külliyat henüz inmediyse arka planda indirmeye başla
     if os.environ.get("KURAN_OTOMATIK_INDIR", "1") == "1" and not c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone():
         kur_baslat()
 threading.Thread(target=lambda: (__import__("time").sleep(2), ilk_kurulum()), daemon=True).start()
+
+# ---------------- Onaylı meal dosyaları (GitHub'daki onayli/ klasörü) ----------------
+ONAYLI_KLASOR = os.path.join(BURASI, "..", "onayli")
+c.execute("CREATE TABLE IF NOT EXISTS yuklenen_dosya(ad TEXT, ozet TEXT, tarih TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(ad, ozet))")
+
+def meal_json_yukle(d, durum_varsayilan="onayli"):
+    """{"sure":68,"ayetler":[{"a":1,"meal":"...[1]...","dipnotlar":["..."]}]} biçimindeki dosyayı içeri alır."""
+    s = int(d["sure"]); n = 0
+    with V._kilit:
+        for x in d["ayetler"]:
+            if not (x.get("meal") or "").strip(): continue
+            c.execute("INSERT OR REPLACE INTO yalin_meal(s,a,metin,dipnotlar,durum,guncelleme) VALUES(?,?,?,?,?,datetime('now'))",
+                      (s, int(x["a"]), x["meal"].strip(), json.dumps(x.get("dipnotlar", []), ensure_ascii=False), x.get("durum", durum_varsayilan)))
+            n += 1
+        c.commit()
+    return n
+
+def onayli_yukle():
+    """onayli/ klasöründeki her dosya (içeriği değiştikçe) bir kez yüklenir; böylece GitHub'dan gelen düzeltmeler uygulamaya geçer."""
+    if not os.path.isdir(ONAYLI_KLASOR): return
+    for ad in sorted(os.listdir(ONAYLI_KLASOR)):
+        if not ad.endswith(".json"): continue
+        ham = open(os.path.join(ONAYLI_KLASOR, ad), "rb").read(); ozet = hashlib.sha1(ham).hexdigest()
+        if c.execute("SELECT 1 FROM yuklenen_dosya WHERE ad=? AND ozet=?", (ad, ozet)).fetchone(): continue
+        n = meal_json_yukle(json.loads(ham))
+        with V._kilit: c.execute("INSERT INTO yuklenen_dosya(ad,ozet) VALUES(?,?)", (ad, ozet)); c.commit()
+        print(f"onaylı meal yüklendi: {ad} ({n} ayet)", flush=True)
 
 # ---------------- Sureler / ayetler ----------------
 @app.get("/api/sureler")
@@ -224,6 +246,22 @@ def yalin_kaydet(s: int, a: int, d: dict = Body(...)):
                   (s, a, d["metin"], json.dumps(d.get("dipnotlar", []), ensure_ascii=False), d.get("durum", "taslak"))); c.commit()
     return tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a)
 
+@app.get("/api/yalin/disa-aktar/{s}")
+def yalin_disa(s: int):
+    """İnceleme için sure dosyası: Arapça + mevcut meal + dipnotlar + durum."""
+    ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
+    yl = {r["a"]: r for r in satirlar("SELECT * FROM yalin_meal WHERE s=?", s)}
+    d = {"sure": s, "ad": V.SURE_ADLARI[s - 1], "ayetler": [
+        {"a": a, "arapca": ar.get(a, ""), "meal": (yl.get(a) or {}).get("metin", ""),
+         "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"), "durum": (yl.get(a) or {}).get("durum", "yok")}
+        for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
+    return Response(json.dumps(d, ensure_ascii=False, indent=1), media_type="application/json",
+                    headers={"Content-Disposition": f"attachment; filename=\"sure_{s:03d}.json\"; filename*=UTF-8''{urllib.parse.quote(f'sure_{s:03d}_{V.SURE_ADLARI[s-1]}.json')}"})
+
+@app.post("/api/yalin/ice-aktar")
+def yalin_ice(d: dict = Body(...)):
+    return {"ayet": meal_json_yukle(d)}
+
 @app.get("/api/kitap.epub")
 def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = False):
     secili = [int(x) for x in sureler.split(",") if x] or sorted({r["s"] for r in satirlar("SELECT DISTINCT s FROM yalin_meal")})
@@ -251,14 +289,10 @@ def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = F
 
 # ---------------- Yapay zekâ: görüş analizi, yalın meal önerisi, Lane çevirisi ----------------
 def claude(sistem, mesaj, max_tokens=4000):
-    if not API_KEY: raise HTTPException(400, "ANTHROPIC_API_KEY tanımlı değil (docker-compose.yml içine ekleyin).")
-    req = urllib.request.Request("https://api.anthropic.com/v1/messages", method="POST",
-        data=json.dumps({"model": MODEL, "max_tokens": max_tokens, "system": sistem, "messages": [{"role": "user", "content": mesaj}]}).encode(),
-        headers={"x-api-key": API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=300) as r: d = json.loads(r.read())
-    except urllib.error.HTTPError as e: raise HTTPException(502, "Claude API: " + e.read().decode()[:400])
-    return "".join(b.get("text", "") for b in d["content"])
+    if not yz.hazir(): raise HTTPException(400, "Yapay zekâ tanımlı değil (docker-compose.yml içinde YZ_ANAHTAR).")
+    try: return yz.sohbet(sistem, mesaj, max_tokens)
+    except yz.KotaDoldu: raise HTTPException(429, "Yapay zekânın günlük ücretsiz kotası doldu; yarın tekrar deneyin.")
+    except RuntimeError as e: raise HTTPException(502, str(e))
 
 def kaynak_paketi(s, a, tefsir_siniri=2500, toplam=90000):
     ay = ayet(s, a); tefsir_sure_hazirla(s)
@@ -345,7 +379,7 @@ def ara(q: str, meal: str = VARSAYILAN_MEAL, limit: int = 200):
 _kurulum = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "kurulum.log")}
 
 @app.get("/api/ayarlar")
-def ayarlar(): return {"yapay_zeka": bool(API_KEY)}
+def ayarlar(): return {"yapay_zeka": yz.hazir(), **yz.bilgi()}
 
 @app.get("/api/durum")
 def durum():
@@ -357,7 +391,7 @@ def durum():
             "meal_kaynak": say("meal_kaynak"), "meal_sure": say("meal_sure"), "meal_sure_hedef": say("meal_kaynak") * 114,
             "tefsir_kaynak": say("tefsir_kaynak"), "tefsir_sure": say("tefsir_sure"), "tefsir_sure_hedef": say("tefsir_kaynak") * 114,
             "hadis": say("hadis"), "hadis_ayet": say("hadis_ayet"), "not": say("notlar"), "yalin": say("yalin_meal"),
-            "db_mb": round(os.path.getsize(V.DB_YOL) / 1e6), "kurulum_calisiyor": calisiyor, "log": log, "yapay_zeka": bool(API_KEY)}
+            "db_mb": round(os.path.getsize(V.DB_YOL) / 1e6), "kurulum_calisiyor": calisiyor, "log": log, "yapay_zeka": yz.hazir()}
 
 @app.post("/api/kur")
 def kur_baslat():
@@ -374,13 +408,13 @@ def uretim_durum():
     log = "".join(open(_uretim["log"], encoding="utf-8").readlines()[-12:]) if os.path.exists(_uretim["log"]) else ""
     return {"hazir": c.execute("SELECT count(*) FROM yalin_meal").fetchone()[0],
             "onayli": c.execute("SELECT count(*) FROM yalin_meal WHERE durum='onayli'").fetchone()[0],
-            "toplam": 6236, "calisiyor": calisiyor, "log": log, "yapay_zeka": bool(API_KEY)}
+            "toplam": 6236, "calisiyor": calisiyor, "log": log, "yapay_zeka": yz.hazir()}
 
 @app.post("/api/uretim")
 def uretim_baslat(d: dict = Body(default={})):
-    if not API_KEY: raise HTTPException(400, "ANTHROPIC_API_KEY tanımlı değil.")
+    if not yz.hazir(): raise HTTPException(400, "Yapay zekâ tanımlı değil (YZ_ANAHTAR).")
     if _uretim["surec"] is not None and _uretim["surec"].poll() is None: return {"durum": "zaten çalışıyor"}
-    _uretim["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "uret.py"), "--sureler", d.get("sureler") or "1-114"],
+    _uretim["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "uret.py"), "--sureler", d.get("sureler") or "1-114", "--paket", os.environ.get("URETIM_PAKET", "tam")],
                                         stdout=open(_uretim["log"], "a"), stderr=subprocess.STDOUT)
     return {"durum": "başladı"}
 
