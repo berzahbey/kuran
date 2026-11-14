@@ -34,8 +34,13 @@ main#metin{overflow:auto;padding:16px 22px}
 .ayet{background:var(--kart);border:1px solid var(--cizgi);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:.1s}
 .ayet:hover{border-color:#b8d4ca}.ayet.secili{border-color:var(--vurgu);box-shadow:0 0 0 2px var(--vurgu2);background:var(--sec)}
 .ayet .ar{font-family:AmiriQuran,Amiri,serif;font-size:27px;line-height:2.15;direction:rtl;text-align:right}
-.ayet .yalin{margin-top:4px;font-size:16px;font-weight:500}
-.ayet .meal{margin-top:4px;color:var(--soluk)}
+.ayet .yalin{margin-top:6px;font-size:17px;line-height:1.55;font-family:Georgia,"Times New Roman",serif}
+.ayet .yalin.eksik{color:#b0aca2;font-style:italic;font-size:14px;font-family:inherit}
+.besmele-tr{font-family:Georgia,serif;font-style:italic;font-size:14px;color:var(--soluk)}
+.panel-meal{font-family:Georgia,serif;font-size:16px;margin:2px 0 6px}
+button.dn{border:0;background:var(--vurgu);color:#fff;border-radius:9px;font-size:10.5px;line-height:1;padding:2px 5px;vertical-align:super;cursor:pointer;margin:0 1px;font-family:system-ui}
+.dn-pop{position:absolute;z-index:60;max-width:420px;background:#fffdf3;border:1px solid #e5d9a8;border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.15);font-size:14px;line-height:1.5}
+.ayet .meal{margin-top:6px;color:var(--soluk);font-size:14px;border-top:1px dashed var(--cizgi);padding-top:5px}
 .ayet .ust{display:flex;justify-content:space-between;font-size:12px;color:var(--soluk)}
 .no{font-family:AmiriQuran,Amiri,serif}
 aside#panel{overflow:auto;border-left:1px solid var(--cizgi);background:var(--kart);display:flex;flex-direction:column}
@@ -78,13 +83,16 @@ pre.log{background:#1f2328;color:#d7e3dc;padding:8px;border-radius:6px;font-size
 .bos{color:var(--soluk);text-align:center;padding:30px}
 .yukleniyor{color:var(--soluk);padding:12px}
 mark{background:#ffe9a8}
+.k-orta{background:#fff1c7;border-radius:3px}.k-az{background:#ffd9a8;border-radius:3px}.k-tek{background:#f8b4a6;border-radius:3px;font-weight:600}
+.k-ek{font-style:italic;color:#8a6d3b}.k-sec{outline:2px solid var(--vurgu);border-radius:3px}.k-satir{background:var(--vurgu2)}
+.k-metin span[data-k]{cursor:pointer}
 </style>
 </head>
 <body>
 <header>
   <h1>☾ Dedplay Kur'an Çalışma</h1>
   <input id="ara" placeholder="Ara: Arapça veya Türkçe (örn. القلم, sabır)…">
-  <select id="mealSec" title="Ana metinde gösterilen meal"></select>
+  <label style="font-size:13px;white-space:nowrap">Karşılaştır: <select id="mealSec" title="Yalın mealin altında gösterilecek karşılaştırma meali"></select></label>
   <button onclick="notlarAc()">Notlarım</button>
   <button onclick="kitapAc()">E-Kitap</button>
   <button onclick="kaynakAc()">Kaynaklar</button>
@@ -108,33 +116,39 @@ function md(t){ // basit markdown
   t=t.replace(/(^|\n)((?:\s*[-*] .*(?:\n|$))+)/g,(m,a,b)=>a+"<ul>"+b.trim().split("\n").map(l=>"<li>"+l.replace(/^\s*[-*] /,"")+"</li>").join("")+"</ul>");
   return t.replace(/\n\n/g,"<br><br>").replace(/([^>])\n/g,"$1<br>");
 }
-const D={sureler:[],s:null,a:null,meal:localStorage.getItem("meal")||"tur-elmalilihamdiya",sekme:"arapca",ayet:null};
+const D={sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"arapca",ayet:null};
 
 async function basla(){
   D.sureler=await api("/api/sureler"); sureListe();
   const ml=await api("/api/meal-kaynaklari"); const sel=$("#mealSec");
-  sel.innerHTML=ml.filter(m=>["Turkish","English","Azerbaijani","German","French","Bosnian"].includes(m.dil)).map(m=>`<option value="${m.id}">${esc(m.dil==="Turkish"?"":m.dil+": ")}${esc(m.yazar)}</option>`).join("");
-  sel.value=D.meal; sel.onchange=()=>{D.meal=sel.value;try{localStorage.setItem("meal",D.meal)}catch(e){};if(D.s)sureAc(D.s,D.a)};
+  sel.innerHTML='<option value="">— yok —</option>'+ml.filter(m=>["Turkish","English","Azerbaijani","German","French","Bosnian"].includes(m.dil)).map(m=>`<option value="${m.id}">${esc(m.dil==="Turkish"?"":m.dil+": ")}${esc(m.yazar)}</option>`).join("");
+  sel.value=D.meal; sel.onchange=()=>{D.meal=sel.value;try{localStorage.setItem("karsilastir",D.meal)}catch(e){};if(D.s)sureAc(D.s,D.a)};
   const h=location.hash.match(/(\d+)(?::(\d+))?/); sureAc(h?+h[1]:68,h&&h[2]?+h[2]:null);
 }
 function sureListe(){
   const f=$("#sureFiltre").value.toLowerCase();
   $("#sureListe").innerHTML=D.sureler.filter(x=>!f||(x.s+" "+x.ad).toLowerCase().includes(f)||x.ad_ar.includes(f)).map(x=>
-   `<div class="sure-oge ${x.s===D.s?"secili":""}" onclick="sureAc(${x.s})"><div>${x.s}. ${esc(x.ad)}<br><small>${x.ayet} ayet${x.nuzul?" · "+(x.nuzul==="Mecca"?"Mekkî":"Medenî"):""}</small>${x.yalin?`<span class="rozet">meal ${x.yalin}</span>`:""}${x.not?`<span class="rozet">not ${x.not}</span>`:""}</div><span class="ar">${esc(x.ad_ar)}</span></div>`).join("");
+   `<div class="sure-oge ${x.s===D.s?"secili":""}" onclick="sureAc(${x.s})"><div>${x.s}. ${esc(x.ad)}<br><small>${x.ayet} ayet${x.nuzul?" · "+(x.nuzul==="Mecca"?"Mekkî":"Medenî"):""}</small>${x.yalin?`<span class="rozet">${x.yalin===x.ayet?"✓ meal":"meal "+x.yalin+"/"+x.ayet}</span>`:""}${x.not?`<span class="rozet">not ${x.not}</span>`:""}</div><span class="ar">${esc(x.ad_ar)}</span></div>`).join("");
 }
 $("#sureFiltre").oninput=sureListe;
 
+const dipnotluMetin=(m,notlar)=>esc(m).replace(/\[(\d+)\]/g,(x,n)=>notlar&&notlar[n-1]!=null?`<button class="dn" data-not="${esc(notlar[n-1])}" onclick="dipnotGoster(event,this)">${n}</button>`:"");
+function dipnotGoster(e,b){e.stopPropagation();dipnotKapat();const p=document.createElement("div");p.className="dn-pop";p.textContent=b.dataset.not;document.body.appendChild(p);
+  const r=b.getBoundingClientRect();p.style.top=(window.scrollY+r.bottom+6)+"px";p.style.left=Math.max(8,Math.min(r.left-20,innerWidth-p.offsetWidth-12))+"px"}
+function dipnotKapat(){document.querySelectorAll(".dn-pop").forEach(x=>x.remove())}
+document.addEventListener("click",dipnotKapat);
 async function sureAc(s,a=null){
   D.s=s; sureListe(); $("#metin").innerHTML='<div class="yukleniyor">Yükleniyor…</div>';
-  const d=await api(`/api/sure/${s}?meal=${D.meal}`); const b=D.sureler[s-1];
-  $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${s}. ${esc(d.ad)} Sûresi</h2>
-   <span class="kucuk">${b.ayet} ayet · <a href="#" onclick="ayetSec(${s},0);return false">sure geneli notlar</a></span></div>
-   ${s!==1&&s!==9?'<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>':""}`+
+  const d=await api(`/api/sure/${s}?meal=${D.meal}`); const b=D.sureler[s-1]; const hazir=d.ayetler.filter(x=>x.yalin).length;
+  const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
+  $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${esc(d.ad)} Sûresi</h2>
+   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet${hazir<b.ayet?` · yalın meal ${hazir}/${b.ayet} hazır`:""} · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a></span></div>
+   ${s!==1&&s!==9?'<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr">Rahmân ve Rahîm olan Allah\'ın adıyla</div></div>':""}`+
    d.ayetler.map(x=>`<div class="ayet" id="ay${x.a}" onclick="ayetSec(${s},${x.a})">
-     <div class="ust"><span>${s}:${x.a}</span><span>${x.yalin_durum==="onayli"?"✓ onaylı meal":x.yalin?"taslak meal":""}${x.not?` · ${x.not} not`:""}</span></div>
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
-     ${x.yalin?`<div class="yalin">${esc(x.yalin).replace(/\[(\d+)\]/g,"<sup>$1</sup>")}</div>`:""}
-     <div class="meal">${esc(x.meal)}</div></div>`).join("");
+     ${x.yalin?`<div class="yalin">${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:'<div class="yalin eksik">Yalın meal henüz hazırlanmadı.</div>'}
+     ${x.meal?`<div class="meal"><span class="kucuk">${esc(kars)}:</span> ${esc(x.meal)}</div>`:""}
+     ${x.not?`<div class="ust"><span></span><span>✎ ${x.not} not</span></div>`:""}</div>`).join("");
   if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
 }
 
@@ -145,16 +159,17 @@ async function ayetSec(s,a){
   if(a===0){ D.ayet=null; panelCiz(`<div class="baslik"><b>${s}. ${esc(D.sureler[s-1].ad)} Sûresi — genel notlar</b><button class="btn ikincil" onclick="panelKapat()">×</button></div>`); return notlarSekme(); }
   $("#panel").innerHTML='<div class="yukleniyor">Yükleniyor…</div>';
   D.ayet=await api(`/api/ayet/${s}/${a}`);
-  const sek=[["arapca","Arapça & Kıraat"],["kelime","Kelime & Kök"],["mealler","Mealler"],["tefsirler","Tefsirler"],["hadisler","Hadisler"],["gorusler","Görüşler"],["yalin","Yalın Meal"],["notlar",`Notlar${D.ayet.notlar.length?" ("+D.ayet.notlar.length+")":""}`]];
+  const sek=[["arapca","Arapça & Kıraat"],["kelime","Kelime & Kök"],["mealler","Mealler"],["karsilastir","Karşılaştır"],["tefsirler","Tefsirler"],["inis","İniş"],["hadisler","Hadisler"],["gorusler","Görüşler"],["yalin","Yalın Meal"],["notlar",`Notlar${D.ayet.notlar.length?" ("+D.ayet.notlar.length+")":""}`]];
   panelCiz(`<div class="baslik"><b>${esc(D.ayet.sure)} ${s}:${a}</b><span><button class="btn ikincil" onclick="ayetSec(${s},${Math.max(1,a-1)})">‹</button> <button class="btn ikincil" onclick="ayetSec(${s},${Math.min(D.sureler[s-1].ayet,a+1)})">›</button> <button class="btn ikincil" onclick="panelKapat()">×</button></span></div>
     <div class="ar">${esc(D.ayet.arapca)}</div>
+    ${D.ayet.yalin?`<div class="panel-meal">${dipnotluMetin(D.ayet.yalin.metin,JSON.parse(D.ayet.yalin.dipnotlar||"[]"))}</div>`:""}
     <div class="sekmeler">${sek.map(([k,t])=>`<button class="${D.sekme===k?"aktif":""}" onclick="sekme('${k}')">${t}</button>`).join("")}</div>`);
   sekme(D.sekme);
 }
 function panelCiz(ust){$("#panel").innerHTML=`<div class="panel-ust">${ust}</div><div class="icerik" id="ic"></div>`}
 function panelKapat(){$("#duzen").classList.add("panel-kapali")}
 function sekme(k){D.sekme=k;document.querySelectorAll(".sekmeler button").forEach(b=>b.classList.toggle("aktif",b.getAttribute("onclick").includes(`'${k}'`)));
-  ({arapca:arapcaSekme,kelime:kelimeSekme,mealler:meallerSekme,tefsirler:tefsirSekme,hadisler:hadisSekme,gorusler:goruslerSekme,yalin:yalinSekme,notlar:notlarSekme})[k]()}
+  ({arapca:arapcaSekme,kelime:kelimeSekme,mealler:meallerSekme,karsilastir:karsilastirSekme,tefsirler:tefsirSekme,hadisler:hadisSekme,inis:inisSekme,gorusler:goruslerSekme,yalin:yalinSekme,notlar:notlarSekme})[k]()}
 const ic=h=>$("#ic").innerHTML=h;
 const yukle=()=>ic('<div class="yukleniyor">Yükleniyor… (yerelde yoksa internetten çekiliyor)</div>');
 
@@ -203,6 +218,24 @@ async function meallerSekme(){
   ciz();
 }
 
+let karDil="Turkish",karSecili=null;
+async function karsilastirSekme(){
+  yukle(); const d=await api(`/api/ayet/${D.s}/${D.a}/karsilastir?dil=${karDil}`); const ad=Object.fromEntries(d.mealler.map(m=>[m.id,m.yazar]));
+  const renk=o=>o==null?"":o>=.6?"":o>=.25?"k-orta":o>.0?"k-az":"";
+  const ciz=()=>{
+   const kelime=w=>{const tek=w.kok&&w.oran*d.sayi<=1;const c=tek?"k-tek":renk(w.oran);const sec=karSecili&&w.kok===karSecili?" k-sec":"";
+     return `<span class="${c}${sec}${w.ek?" k-ek":""}" ${w.kok?`data-k="${w.kok}" title="${Math.round(w.oran*d.sayi)}/${d.sayi} meal"`:""}>${esc(w.t)}</span>`};
+   ic(`<div class="cipler">${["Turkish","English","Arabic","German","French","Bosnian","Azerbaijani"].map(x=>`<span class="cip ${x===karDil?"aktif":""}" data-dil="${x}">${x}</span>`).join("")}</div>
+    <p class="kucuk">${d.sayi} farklı meal karşılaştırıldı. Renkler: <span class="k-orta">bazı meallerin tercihi</span> · <span class="k-az">az kişinin tercihi</span> · <span class="k-tek">sadece bu meal</span> · <span class="k-ek">(parantez içi ekleme)</span>. Bir kelimeye tıklayınca o tercihi yapan mealler işaretlenir.</p>
+    <div class="grup"><h4>Ortak anlam (meallerin çoğunda)</h4><div class="cipler">${d.ortak.map(o=>`<span class="cip" data-k="${o.kok}">${esc(o.ornek)} · ${o.sayi}</span>`).join("")}</div></div>
+    <div class="grup"><h4>Ayrışan tercihler</h4><div class="cipler">${d.ayrisan.slice(0,40).map(o=>`<span class="cip ${o.kok===karSecili?"aktif":""}" data-k="${o.kok}">${esc(o.ornek)} · ${o.sayi}</span>`).join("")}</div></div>
+    <div class="grup"><h4>Benzer çizgideki mealler (${d.gruplar.length} grup)</h4>${d.gruplar.map((g,i)=>`<div class="oge"><b>Grup ${i+1}</b> <span class="kucuk">(${g.length})</span> ${g.map(x=>esc(ad[x])).join(" · ")}</div>`).join("")}</div>
+    <div class="grup"><h4>Mealler</h4>${d.mealler.map(m=>`<div class="oge ${karSecili&&m.kelimeler.some(w=>w.kok===karSecili)?"k-satir":""}"><b>${esc(m.yazar)}</b><div class="k-metin">${m.kelimeler.map(kelime).join(" ")}</div></div>`).join("")}</div>`);
+   document.querySelectorAll("[data-dil]").forEach(x=>x.onclick=()=>{karDil=x.dataset.dil;karSecili=null;karsilastirSekme()});
+   document.querySelectorAll("#ic [data-k]").forEach(x=>x.onclick=()=>{karSecili=karSecili===x.dataset.k?null:x.dataset.k;ciz()});
+  };ciz();
+}
+
 let tefTur="hepsi",tefDil="hepsi";
 async function tefsirSekme(){
   yukle(); const t=await api(`/api/ayet/${D.s}/${D.a}/tefsirler`);
@@ -221,6 +254,16 @@ async function tefsirAc(slug,el){const k=el.nextElementSibling; if(k.innerHTML){
   k.innerHTML='<div class="yukleniyor">…</div>'; const d=await api(`/api/tefsir/${slug}/${D.s}/${D.a}`);
   k.innerHTML=`<div class="tefsir-metin ${AR.test(d.metin)?"rtl":""}">${esc(d.metin)}</div><button class="btn ikincil" style="margin-top:4px" onclick="alintiNot('${esc(d.ad).replace(/'/g,"\\'")}',this)">Bu tefsirden not al</button>`;}
 function alintiNot(kaynak){sekme("notlar");setTimeout(()=>{$("#notMetin").value=`[${kaynak}] `;$("#notEtiket").value="tefsir";$("#notMetin").focus()},50)}
+
+async function inisSekme(){
+  yukle(); const d=await api(`/api/ayet/${D.s}/${D.a}/inis`);
+  ic(`<div class="grup"><h4>Nerede, ne zaman</h4><div class="oge"><b>${esc(d.sure)} Sûresi</b>: ${esc(d.yer||"?")}'de indi · iniş sırasına göre <b>${d.sira}.</b> sure
+    <div class="kucuk">Sure Mekkî/Medenî olsa bile içindeki bazı ayetlerin farklı yerde indiği rivayet edilir; varsa aşağıdaki rivayetlerde geçer.</div></div></div>
+   <div class="grup"><h4>Sebeb-i nüzûl — Vâhidî, Esbâbü'n-Nüzûl</h4>${d.vahidi?`<div class="oge" style="white-space:pre-wrap">${esc(d.vahidi)}</div>`:'<p class="kucuk">Vâhidî bu ayet için ayrı bir iniş sebebi zikretmiyor.</p>'}</div>
+   <div class="grup"><h4>Rivâyet tefsirlerinde iniş sebebiyle ilgili kısımlar</h4>
+   ${d.rivayetler.length?d.rivayetler.map(r=>`<div class="oge"><b>${r.yil} · ${esc(r.ad)}</b>${r.parcalar.map(p=>`<div class="rtl" style="font-size:17px">${esc(p)}</div>`).join("")}
+     <a href="#" class="kucuk" onclick="sekme('tefsirler');return false">tam metin → Tefsirler</a></div>`).join(""):`<p class="kucuk">Rivâyet tefsirlerinde bu ayet için "nezelet / sebebü'n-nüzûl" ifadesi geçmiyor.</p>`}</div>`);
+}
 
 async function hadisSekme(){
   yukle(); let h; try{h=await api(`/api/ayet/${D.s}/${D.a}/hadisler`)}catch(e){return ic(`<p class="bos">${esc(e.message)}</p>`)}
@@ -293,8 +336,18 @@ async function kaynakAc(){const d=await api("/api/durum");const y=(a,b)=>b?Math.
    <div><b>${d.tefsir_kaynak}</b>tefsir · ${y(d.tefsir_sure,d.tefsir_sure_hedef)} indirildi</div><div><b>${d.hadis.toLocaleString()}</b>hadis metni (ar/tr/en)</div>
    <div><b>${d.hadis_ayet.toLocaleString()}</b>hadis–ayet bağlantısı</div><div><b>${d.db_mb} MB</b>veritabanı</div><div><b>${d.yapay_zeka?"Açık":"Kapalı"}</b>yapay zekâ (görüş analizi, yalın meal önerisi)</div></div>
    <button class="btn" ${d.kurulum_calisiyor?"disabled":""} onclick="api('/api/kur',{method:'POST'}).then(()=>setTimeout(kaynakAc,1500))">${d.kurulum_calisiyor?"İndiriliyor…":"Tüm kaynakları indir / güncelle"}</button>
-   ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}`);
+   ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}
+   <h3 style="margin-top:22px">Yalın meal üretimi (bir seferlik)</h3><div id="uretimKutu" class="kucuk">…</div>`);
+  uretimCiz();
   if(d.kurulum_calisiyor)setTimeout(()=>{if($("#modalArka").style.display==="flex"&&$("#modalIcerik").innerHTML.includes("Kaynaklar"))kaynakAc()},4000)}
+
+async function uretimCiz(){const u=await api("/api/uretim");const k=$("#uretimKutu");if(!k)return;
+  k.innerHTML=`<p><b>${u.hazir.toLocaleString()} / ${u.toplam.toLocaleString()}</b> ayetin yalın meali hazır (${u.onayli} onaylı).
+   Yapay zekâ her ayet için kök/lügat, 11 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meali okuyup en yalın meali ve gerekli dipnotları yazar.
+   Meali olan ayetlere (onaylı veya sizin düzelttikleriniz) dokunmaz; yarıda kalırsa kaldığı yerden devam eder. Tüm Kur'an için yaklaşık 35–60 milyon girdi token'ı harcar.</p>
+   ${u.yapay_zeka?`<input class="tam" id="uretSure" placeholder="Sureler (boş = tümü, örn. 68 veya 78-114)" style="max-width:320px"> <button class="btn" ${u.calisiyor?"disabled":""} onclick="api('/api/uretim',{method:'POST',body:JSON.stringify({sureler:$('#uretSure').value.trim()})}).then(uretimCiz)">${u.calisiyor?"Üretiliyor…":"Yalın meali üret"}</button>`:"<p><b>ANTHROPIC_API_KEY tanımlı değil.</b> Anahtarı ekleyip uygulamayı yeniden başlatınca bu düğme açılır.</p>"}
+   ${u.log?`<pre class="log">${esc(u.log)}</pre>`:""}`;
+  if(u.calisiyor)setTimeout(()=>{if($("#uretimKutu"))uretimCiz()},5000)}
 
 // ---- Arama ----
 $("#ara").onkeydown=async e=>{if(e.key!=="Enter")return;const q=e.target.value.trim();if(!q)return;

@@ -46,17 +46,20 @@ def sureler():
     yalin = {r["s"]: r["n"] for r in satirlar("SELECT s, count(*) n FROM yalin_meal GROUP BY s")}
     bilgi = {r["s"]: r for r in satirlar("SELECT * FROM sure_bilgi")}
     return [{"s": i + 1, "ad": V.SURE_ADLARI[i], "ad_ar": bilgi.get(i + 1, {}).get("ad_ar", ""), "nuzul": bilgi.get(i + 1, {}).get("nuzul", ""),
-             "ayet": V.AYET_SAYILARI[i], "not": notsay.get(i + 1, 0), "yalin": yalin.get(i + 1, 0)} for i in range(114)]
+             "ayet": V.AYET_SAYILARI[i], "sira": V.NUZUL_SIRASI[i], "not": notsay.get(i + 1, 0), "yalin": yalin.get(i + 1, 0)} for i in range(114)]
 
 @app.get("/api/sure/{s}")
-def sure(s: int, meal: str = VARSAYILAN_MEAL):
-    V.arapca_yukle(c); V.meal_sure_yukle(c, meal, s)
+def sure(s: int, meal: str = ""):
+    """Okuma görünümü: Arapça + yalın meal (ana metin). meal verilirse karşılaştırma meali de eklenir."""
+    V.arapca_yukle(c)
+    if meal: V.meal_sure_yukle(c, meal, s)
     ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
-    ml = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", meal, s)}
-    yl = {r["a"]: r for r in satirlar("SELECT a, metin, durum FROM yalin_meal WHERE s=?", s)}
+    ml = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", meal, s)} if meal else {}
+    yl = {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum FROM yalin_meal WHERE s=?", s)}
     ns = {r["a"]: r["n"] for r in satirlar("SELECT a, count(*) n FROM notlar WHERE s=? GROUP BY a", s)}
     return {"s": s, "ad": V.SURE_ADLARI[s - 1], "ayetler": [
         {"a": a, "arapca": ar.get(a, ""), "meal": ml.get(a, ""), "yalin": (yl.get(a) or {}).get("metin"),
+         "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"),
          "yalin_durum": (yl.get(a) or {}).get("durum"), "not": ns.get(a, 0)} for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
 
 @app.get("/api/ayet/{s}/{a}")
@@ -168,7 +171,7 @@ def kok(kok: str, meal: str = VARSAYILAN_MEAL):
     sureler_ = sorted({g["s"] for g in gecis})
     with cf.ThreadPoolExecutor(16) as ex: list(ex.map(lambda s: V.meal_sure_yukle(c, meal, s), sureler_))
     for g in gecis:
-        r = tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", meal, g["s"], g["a"])
+        r = tek("SELECT metin FROM yalin_meal WHERE s=? AND a=?", g["s"], g["a"]) or tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", meal, g["s"], g["a"])
         g["meal"] = r["metin"] if r else ""; g["sure"] = V.SURE_ADLARI[g["s"] - 1]
     tr = tek("SELECT metin FROM ceviri_onbellek WHERE anahtar=?", "lane:" + kok)
     return {"kok": kok, "lane": lane, "lane_tr": tr["metin"] if tr else None, "lemmalar": lemmalar, "gecisler": gecis}
@@ -327,7 +330,11 @@ def ara(q: str, meal: str = VARSAYILAN_MEAL, limit: int = 200):
         qs = V.sadelestir(q)
         r = [x for x in satirlar("SELECT s, a, metin FROM ayet WHERE kaynak='ara-quranuthmanihaf'") if qs in V.sadelestir(x["metin"])][:limit]
     else:
-        r = satirlar("SELECT s, a, metin FROM meal WHERE id=? AND metin LIKE ? ORDER BY s, a LIMIT ?", meal, f"%{q}%", limit)
+        r = satirlar("SELECT s, a, metin FROM yalin_meal WHERE metin LIKE ? ORDER BY s, a LIMIT ?", f"%{q}%", limit)
+        if meal:
+            gorulen = {(x["s"], x["a"]) for x in r}
+            r += [x for x in satirlar("SELECT s, a, metin FROM meal WHERE id=? AND metin LIKE ? ORDER BY s, a LIMIT ?", meal, f"%{q}%", limit)
+                  if (x["s"], x["a"]) not in gorulen]
     for x in r: x["sure"] = V.SURE_ADLARI[x["s"] - 1]
     return r
 
@@ -353,7 +360,110 @@ def kur_baslat():
                                          stdout=open(_kurulum["log"], "w"), stderr=subprocess.STDOUT)
     return {"durum": "başladı"}
 
+_uretim = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "uretim.log")}
+
+@app.get("/api/uretim")
+def uretim_durum():
+    calisiyor = _uretim["surec"] is not None and _uretim["surec"].poll() is None
+    log = "".join(open(_uretim["log"], encoding="utf-8").readlines()[-12:]) if os.path.exists(_uretim["log"]) else ""
+    return {"hazir": c.execute("SELECT count(*) FROM yalin_meal").fetchone()[0],
+            "onayli": c.execute("SELECT count(*) FROM yalin_meal WHERE durum='onayli'").fetchone()[0],
+            "toplam": 6236, "calisiyor": calisiyor, "log": log, "yapay_zeka": bool(API_KEY)}
+
+@app.post("/api/uretim")
+def uretim_baslat(d: dict = Body(default={})):
+    if not API_KEY: raise HTTPException(400, "ANTHROPIC_API_KEY tanımlı değil.")
+    if _uretim["surec"] is not None and _uretim["surec"].poll() is None: return {"durum": "zaten çalışıyor"}
+    _uretim["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "uret.py"), "--sureler", d.get("sureler") or "1-114"],
+                                        stdout=open(_uretim["log"], "a"), stderr=subprocess.STDOUT)
+    return {"durum": "başladı"}
+
 app.mount("/static", StaticFiles(directory=os.path.join(BURASI, "static")), name="static")
 
 @app.get("/")
 def ana(): return FileResponse(os.path.join(BURASI, "static", "index.html"))
+
+# ---------------- Meal karşılaştırma (yapay zekâsız): aynı / farklı tercihler ----------------
+_DUR = set("ve bir bu şu o da de ki ile için gibi ne ya hem ise ama fakat çünkü artık işte en daha çok her hiç olan olarak onlar onları onların onlara onu onun ona sen seni senin sana siz sizi sizin size biz bizi bizim bize ben beni benim bana kendi şey şeyi diye ancak eğer şüphesiz muhakkak gerçekten elbette kuşkusuz doğrusu hani".split())
+_TR_KUCUK = str.maketrans("İIÂÎÛ", "iıâîû")
+
+def _kelimeler(metin):
+    out, parantez = [], 0
+    for m in re.finditer(r"[\(\)\[\]]|[^\s\(\)\[\]]+", metin):
+        p = m[0]
+        if p in "([": parantez += 1; continue
+        if p in ")]": parantez = max(0, parantez - 1); continue
+        temiz = re.sub(r"[^\wâîûçğıöşü'’]", "", p.translate(_TR_KUCUK).lower()).replace("’", "'")
+        kok = re.split("'", temiz)[0]
+        kok = kok.replace("â", "a").replace("î", "i").replace("û", "u")
+        out.append({"t": p, "kok": kok[:5] if len(kok) > 2 and kok not in _DUR else "", "ek": parantez > 0})
+    return out
+
+@app.get("/api/ayet/{s}/{a}/karsilastir")
+def karsilastir(s: int, a: int, dil: str = "Turkish"):
+    gruplar = mealler(s, a, dil)
+    liste = [m for g in gruplar for m in g["mealler"] if not m["id"].startswith("tur-latinalphabet")]
+    yalin = tek("SELECT metin FROM yalin_meal WHERE s=? AND a=?", s, a)
+    if yalin and dil == "Turkish":
+        liste = [{"id": "yalin", "yazar": "★ Yalın meal", "metin": re.sub(r"\[\d+\]", "", yalin["metin"])}] + liste
+    gorulen, tekil = set(), []
+    for m in liste:  # aynı metnin kopyalarını ayıkla
+        k = re.sub(r"\W", "", m["metin"].lower())
+        if k in gorulen: continue
+        gorulen.add(k); tekil.append(m)
+    n = len(tekil)
+    for m in tekil:
+        m["kelimeler"] = _kelimeler(m["metin"]); m["koklar"] = {w["kok"] for w in m["kelimeler"] if w["kok"]}
+    sayac = {}
+    for m in tekil:
+        for k in m["koklar"]: sayac.setdefault(k, []).append(m["id"])
+    for m in tekil:
+        for w in m["kelimeler"]:
+            w["oran"] = round(len(sayac.get(w["kok"], [])) / n, 3) if w["kok"] else None
+    ornek = {}
+    for m in tekil:
+        for w in m["kelimeler"]:
+            if w["kok"]: ornek.setdefault(w["kok"], re.sub(r"[^\wâîûçğıöşüÇĞİÖŞÜÂÎÛ'’-]", "", w["t"]))
+    ortak = sorted([k for k, v in sayac.items() if len(v) / n >= 0.6], key=lambda k: -len(sayac[k]))
+    ayrisan = sorted([k for k, v in sayac.items() if 2 <= len(v) and len(v) / n < 0.6], key=lambda k: -len(sayac[k]))
+    # benzer meal grupları (kök kümesi benzerliği, açgözlü kümeleme)
+    def benzer(x, y): return len(x & y) / max(1, len(x | y))
+    kalan = list(tekil); kumeler = []
+    while kalan:
+        m = kalan.pop(0); kume = [m]
+        for o in kalan[:]:
+            if benzer(m["koklar"], o["koklar"]) >= 0.45: kume.append(o); kalan.remove(o)
+        kumeler.append([x["id"] for x in kume])
+    for m in tekil: m.pop("koklar")
+    return {"sayi": n, "mealler": tekil,
+            "ortak": [{"kok": k, "ornek": ornek[k], "sayi": len(sayac[k])} for k in ortak],
+            "ayrisan": [{"kok": k, "ornek": ornek[k], "sayi": len(sayac[k]), "mealler": sayac[k]} for k in ayrisan],
+            "gruplar": kumeler}
+
+
+# ---------------- İniş: nerede/ne zaman indi, sebeb-i nüzûl ----------------
+_NUZUL_RE = re.compile(r"(سبب\s*نزول|نزلت|أنزلت|نزل(?:ت)?\s+(?:هذه|فيه|في)|فأنزل\s+الله)")
+
+@app.get("/api/ayet/{s}/{a}/inis")
+def inis(s: int, a: int):
+    bilgi = tek("SELECT * FROM sure_bilgi WHERE s=?", s) or {}
+    sonuc = {"sure": V.SURE_ADLARI[s - 1], "yer": {"Mecca": "Mekke", "Medina": "Medine", "Madina": "Medine"}.get(bilgi.get("nuzul"), bilgi.get("nuzul")),
+             "sira": V.NUZUL_SIRASI[s - 1], "vahidi": None, "rivayetler": []}
+    tefsir_sure_hazirla(s)
+    r = tek("SELECT metin FROM tefsir WHERE slug='en-asbab-al-nuzul-by-al-wahidi' AND s=? AND a=?", s, a)
+    if r: sonuc["vahidi"] = V.ac(r["metin"])
+    for slug in V.ESBAB_TEFSIRLER:
+        r = tek("SELECT metin FROM tefsir WHERE slug=? AND s=? AND a=?", slug, s, a)
+        if not r: continue
+        metin = re.sub(r"\s+", " ", V.ac(r["metin"])); parca, son = [], -1
+        for m in _NUZUL_RE.finditer(metin):
+            if m.start() < son: continue
+            bas = max(0, metin.rfind(" ", 0, max(0, m.start() - 220)) + 1); bit = metin.find(" ", min(len(metin), m.end() + 380))
+            bit = len(metin) if bit < 0 else bit
+            parca.append(("…" if bas else "") + metin[bas:bit] + ("…" if bit < len(metin) else "")); son = bit
+            if len(parca) >= 4: break
+        if parca:
+            yil, tur, ad = V.TEFSIR_BILGI.get(slug, (9999, "", slug))
+            sonuc["rivayetler"].append({"slug": slug, "ad": ad, "yil": yil, "parcalar": parca})
+    sonuc["rivayetler"].sort(key=lambda x: x["yil"])
+    return sonuc
