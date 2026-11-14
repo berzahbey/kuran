@@ -49,7 +49,7 @@ def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar
                 paras.append(f'<p{tr_ozn.replace(chr(34)+"tr", chr(34)+"tr sade")}>{t}</p>')
         notlar = "".join(f'<aside epub:type="footnote" class="dipnot" id="{fid}-n{k}"' + (' dir="rtl" lang="ota"' if osmanlica else '') + f'><p><a class="geri" href="#{fid}-r{k}">{k}.</a> {html.escape(v)}</p></aside>'
                          for k, v in sorted(d.get("dipnotlar", {}).items(), key=lambda x: int(x[0])))
-        besm = "" if s in (1, 9) else (f'<div class="besmele">' + (f'<span class="ar" lang="ar" dir="rtl">{BESMELE_AR}</span>' if arapca else "") + '<span class="tr">' + ("رحمان و رحیم اولان اللّهڭ آدیله" if osmanlica else "Rahmân ve Rahîm olan Allah\'ın adıyla") + '</span></div>')
+        besm = "" if s in (1, 9) else (f'<div class="besmele">' + (f'<span class="ar" lang="ar" dir="rtl">{BESMELE_AR}</span>' if arapca else "") + '<span class="tr">' + ("رحمان و رحیم اولان اللّهڭ اسمیله" if osmanlica else "Rahmân ve Rahîm olan Allah\'ın ismiyle") + '</span></div>')
         govde = (f'<section epub:type="chapter"><h1><span class="ar" lang="ar" dir="rtl">{html.escape(d.get("ad_ar",""))}</span>'
                  + ("" if osmanlica else f'{html.escape(d["ad"])} Sûresi') + '</h1>' + besm + "".join(paras)
                  + (f'<section class="notlar" epub:type="footnotes"><h2>{"حاشیه‌لر" if osmanlica else "Dipnotlar"}</h2>{notlar}</section>' if notlar else "") + "</section>")
