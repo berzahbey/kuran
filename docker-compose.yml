@@ -1,4 +1,4 @@
-# Dedplay Kur'an Çalışma — ZimaOS / Docker kurulumu
+# Dedplay Kur'ân-ı Kerîm Çalışma — ZimaOS / Docker kurulumu
 # ZimaOS: App Store > Custom Install > Import (bu dosyayı yapıştırın)
 # Komut satırı: docker compose up -d
 name: kuran-calisma
@@ -25,3 +25,22 @@ services:
       URETIM_PAKET: tam                  # kaynak paketi: tam | orta | kucuk (token sınırı hatası alırsanız küçültün)
       # OpenRouter örneği:  YZ_SAGLAYICI: openai  YZ_URL: https://openrouter.ai/api/v1/chat/completions  YZ_MODEL: <ücretsiz model>:free
       # Yerel Ollama örneği: YZ_SAGLAYICI: openai  YZ_URL: http://dedplay:11434/v1/chat/completions  YZ_MODEL: qwen2.5:14b
+
+# ZimaOS / CasaOS uygulama bilgileri (ikon, ad, adres)
+x-casaos:
+  architectures: [amd64, arm64]
+  main: kuran-calisma
+  author: berzahbey
+  developer: berzahbey
+  category: Education
+  icon: https://raw.githubusercontent.com/berzahbey/kuran/main/app/static/ikon.png
+  title:
+    en_us: "Dedplay Kur'ân-ı Kerîm Çalışma"
+    tr_tr: "Dedplay Kur'ân-ı Kerîm Çalışma"
+  tagline:
+    en_us: "Yalın Türkçe meal ve Kur'an çalışma platformu"
+  description:
+    en_us: "Merkezinde Kur'an; yalın meal, kök ve lügat, 492 meal, 123 tefsir, hadisler ve notlar."
+  index: /
+  port_map: "8120"
+  scheme: http

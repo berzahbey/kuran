@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="zemin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#23806a"/><stop offset="1" stop-color="#164f42"/>
+    </linearGradient>
+    <linearGradient id="altin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f3d68a"/><stop offset="1" stop-color="#c99a3a"/>
+    </linearGradient>
+    <linearGradient id="sayfa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#efe4cc"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#zemin)"/>
+  <!-- ince geometrik çerçeve -->
+  <rect x="34" y="34" width="444" height="444" rx="88" fill="none" stroke="#f3d68a" stroke-opacity=".28" stroke-width="4"/>
+  <!-- sekiz köşeli yıldız (iki kare) -->
+  <g transform="translate(256 122)">
+    <rect x="-40" y="-40" width="80" height="80" fill="url(#altin)"/>
+    <rect x="-40" y="-40" width="80" height="80" fill="url(#altin)" transform="rotate(45)"/>
+    <circle r="27" fill="none" stroke="#1d6b59" stroke-width="6"/>
+    <circle r="10" fill="#1d6b59"/>
+  </g>
+  <!-- açık kitap -->
+  <g transform="translate(256 278)">
+    <path d="M0 -40 C -40 -66 -110 -70 -158 -52 L -158 92 C -110 74 -40 78 0 104 Z" fill="url(#sayfa)"/>
+    <path d="M0 -40 C 40 -66 110 -70 158 -52 L 158 92 C 110 74 40 78 0 104 Z" fill="url(#sayfa)"/>
+    <path d="M0 -40 L 0 104" stroke="#c99a3a" stroke-width="5"/>
+    <!-- satırlar -->
+    <g fill="none" stroke="#7aa898" stroke-width="7" stroke-linecap="round">
+      <path d="M-130 -22 C -95 -32 -60 -30 -28 -18"/><path d="M-130 8 C -95 -2 -60 0 -28 12"/><path d="M-130 38 C -95 28 -60 30 -28 42"/><path d="M-130 66 C -100 58 -76 58 -56 64"/>
+      <path d="M130 -22 C 95 -32 60 -30 28 -18"/><path d="M130 8 C 95 -2 60 0 28 12"/><path d="M130 38 C 95 28 60 30 28 42"/><path d="M130 66 C 100 58 76 58 56 64"/>
+    </g>
+    <!-- kitap kenarı -->
+    <path d="M -168 -44 L -168 104 C -110 86 -40 90 0 116 C 40 90 110 86 168 104 L 168 -44" fill="none" stroke="url(#altin)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+  <!-- rahle ayakları -->
+  <g stroke="url(#altin)" stroke-width="14" stroke-linecap="round">
+    <path d="M204 394 L308 440"/><path d="M308 394 L204 440"/>
+  </g>
+</svg>

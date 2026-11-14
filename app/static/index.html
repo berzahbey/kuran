@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dedplay Kur'an Çalışma</title>
+<title>Dedplay Kur'ân-ı Kerîm Çalışma</title>
+<link rel="icon" type="image/svg+xml" href="/static/ikon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png">
+<link rel="apple-touch-icon" href="/static/ikon-192.png">
+<meta name="theme-color" content="#1f6f5c">
 <style>
 @font-face{font-family:"AmiriQuran";src:url(/static/font/AmiriQuran.ttf)}
 @font-face{font-family:"Amiri";src:url(/static/font/Amiri-Regular.ttf)}
@@ -15,7 +19,11 @@ header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(
 header h1{font-size:16px;margin:0 8px 0 0;white-space:nowrap}
 header input,header select{padding:6px 8px;border-radius:6px;border:0;font-size:14px}
 header input{flex:1;min-width:120px;max-width:380px}
-header button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px}
+header select{max-width:230px;min-width:90px}
+header label{flex-shrink:0}
+@media (max-width:1100px){header .etiket-yazi{display:none} header select{max-width:150px}}
+@media (max-width:900px){header h1{font-size:0} header h1 img{margin:0}}
+header button{white-space:nowrap;flex-shrink:0;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px}
 header button:hover{background:rgba(255,255,255,.28)}
 .duzen{display:grid;grid-template-columns:220px minmax(0,1fr) minmax(0,1.15fr);height:calc(100vh - 46px)}
 .duzen.panel-kapali{grid-template-columns:220px minmax(0,1fr) 0}
@@ -103,9 +111,9 @@ mark{background:#ffe9a8}
 </head>
 <body>
 <header>
-  <h1>☾ Dedplay Kur'an Çalışma</h1>
+  <h1><img src="/static/ikon.svg" alt="" style="width:26px;height:26px;vertical-align:-7px;margin-right:6px;border-radius:6px">Dedplay Kur'ân-ı Kerîm Çalışma</h1>
   <input id="ara" placeholder="Ara: Arapça veya Türkçe (örn. القلم, sabır)…">
-  <label style="font-size:13px;white-space:nowrap">Karşılaştır: <select id="mealSec" title="Yalın mealin altında gösterilecek karşılaştırma meali"></select></label>
+  <label style="font-size:13px;white-space:nowrap"><span class="etiket-yazi">Karşılaştır: </span><select id="mealSec" title="Yalın mealin altında gösterilecek karşılaştırma meali"></select></label>
   <button id="arDugme" onclick="arapcaDegistir()" title="Arapça aslını göster/gizle">ع Arapça</button>
   <button onclick="notlarAc()">Notlarım</button>
   <button onclick="kitapAc()">E-Kitap</button>

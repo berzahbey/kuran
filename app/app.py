@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 sys.path.insert(0, os.path.dirname(__file__))
 import veri as V, kitap, yz, hashlib
 
-app = FastAPI(title="Dedplay Kur'an Çalışma")
+app = FastAPI(title="Dedplay Kur'ân-ı Kerîm Çalışma")
 BURASI = os.path.dirname(os.path.abspath(__file__))
 c = V.baglan(); V.sema_kur(c)
 c.executescript("""
@@ -421,6 +421,9 @@ def uretim_baslat(d: dict = Body(default={})):
     return {"durum": "başladı"}
 
 app.mount("/static", StaticFiles(directory=os.path.join(BURASI, "static")), name="static")
+
+@app.get("/favicon.ico")
+def favicon(): return FileResponse(os.path.join(BURASI, "static", "favicon.png"), media_type="image/png")
 
 @app.get("/")
 def ana(): return FileResponse(os.path.join(BURASI, "static", "index.html"))

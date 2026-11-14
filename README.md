@@ -1,4 +1,6 @@
-# Dedplay Kur'an Çalışma
+# Dedplay Kur'ân-ı Kerîm Çalışma
+
+<img src="app/static/ikon.png" width="96" alt="ikon">
 
 Merkezinde Kur'an-ı Kerîm'in olduğu, tüm meal, tefsir, hadis ve lügat çalışmalarına ulaşılabilen kişisel kaynak ve çalışma platformu (ticari olmayan proje).
 
