@@ -10,17 +10,33 @@ Geriye dönük: ANTHROPIC_API_KEY tanımlıysa anthropic kullanılır.
 """
 import json, os, threading, time, urllib.request, urllib.error
 
-SAGLAYICI = os.environ.get("YZ_SAGLAYICI", "").lower()
-ANAHTAR = os.environ.get("YZ_ANAHTAR", "")
-if not SAGLAYICI:
-    if ANAHTAR: SAGLAYICI = "gemini"
-    elif os.environ.get("ANTHROPIC_API_KEY"): SAGLAYICI, ANAHTAR = "anthropic", os.environ["ANTHROPIC_API_KEY"]
-if SAGLAYICI == "anthropic" and not ANAHTAR: ANAHTAR = os.environ.get("ANTHROPIC_API_KEY", "")
+# Anahtarın biçiminden sağlayıcıyı tanı (yanlış satıra yazılsa da doğru yere gitsin)
+def _tani(anahtar):
+    if anahtar.startswith("AIza"): return "gemini", ""
+    if anahtar.startswith("sk-ant-"): return "anthropic", ""
+    if anahtar.startswith("sk-or-"): return "openai", "https://openrouter.ai/api/v1/chat/completions"
+    if anahtar.startswith("gsk_"): return "openai", "https://api.groq.com/openai/v1/chat/completions"
+    if anahtar.startswith("csk-"): return "openai", "https://api.cerebras.ai/v1/chat/completions"
+    return None, ""
+
+ANAHTAR = (os.environ.get("YZ_ANAHTAR") or os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+SAGLAYICI = os.environ.get("YZ_SAGLAYICI", "").strip().lower()
+_tahmin, _tahmin_url = _tani(ANAHTAR)
+if _tahmin and (not SAGLAYICI or SAGLAYICI != _tahmin):
+    SAGLAYICI = _tahmin  # anahtar biçimi kesin bilgi verir
+if not SAGLAYICI and ANAHTAR: SAGLAYICI = "gemini"
 
 VARSAYILAN_MODEL = {"gemini": "gemini-flash-latest", "anthropic": "claude-sonnet-4-5", "openai": "meta-llama/llama-3.3-70b-instruct:free"}
-MODEL = os.environ.get("YZ_MODEL") or os.environ.get("KURAN_MODEL") or VARSAYILAN_MODEL.get(SAGLAYICI, "")
-URL = os.environ.get("YZ_URL") or {"gemini": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-                                    "openai": "https://openrouter.ai/api/v1/chat/completions"}.get(SAGLAYICI, "")
+MODEL = os.environ.get("YZ_MODEL") or ""
+if SAGLAYICI == "anthropic" and not MODEL: MODEL = os.environ.get("KURAN_MODEL", "")
+if (SAGLAYICI == "gemini" and MODEL and not MODEL.startswith(("gemini", "gemma"))) or \
+   (SAGLAYICI == "anthropic" and MODEL and not MODEL.startswith("claude")):
+    MODEL = ""  # başka sağlayıcının model adı kalmışsa yok say
+if not MODEL and "groq.com" in _tahmin_url: MODEL = "llama-3.3-70b-versatile"
+if not MODEL and "cerebras.ai" in _tahmin_url: MODEL = "llama-3.3-70b"
+MODEL = MODEL or VARSAYILAN_MODEL.get(SAGLAYICI, "")
+URL = os.environ.get("YZ_URL") or _tahmin_url or {"gemini": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                                                  "openai": "https://openrouter.ai/api/v1/chat/completions"}.get(SAGLAYICI, "")
 DAKIKADA = float(os.environ.get("YZ_DAKIKADA") or (8 if SAGLAYICI == "gemini" else 20))
 
 def hazir(): return bool(SAGLAYICI and (ANAHTAR or URL.startswith("http://")))  # http:// = yerel sunucu (Ollama vb.), anahtarsız
