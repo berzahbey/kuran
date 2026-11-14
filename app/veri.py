@@ -259,7 +259,9 @@ YAZAR_ADI = {"tur-abdulbakigolpin": "Abdülbâki Gölpınarlı", "tur-ademugur":
  "tur-muhammetabay": "Muhammet Abay", "tur-muslimshahin": "Müslim Şahin", "tur-sabanpiris": "Şaban Piriş",
  "tur-shabanbritch": "Şaban Britch", "tur-suatyildirim": "Suat Yıldırım", "tur-suleymanates": "Süleyman Ateş",
  "tur-tefhimulkuran": "Tefhîmu'l-Kur'an (Mevdûdî)", "tur-wwwislamhouseco": "IslamHouse", "tur-yasarnuriozturk": "Yaşar Nuri Öztürk",
- "tur-yasarnuriozturk1": "Yaşar Nuri Öztürk (2)", "tur-ynozturk": "Yaşar Nuri Öztürk (3)"}
+ "tur-yasarnuriozturk1": "Yaşar Nuri Öztürk (2)", "tur-ynozturk": "Yaşar Nuri Öztürk (3)",
+ "nld-fredleemhuis": "Fred Leemhuis", "nld-sofianssiregar": "Sofian S. Siregar", "nld-salomokeyzer": "Salomo Keyzer (1860)",
+ "nld-unknown": "Anoniem (Van De Taal)"}
 
 def _sade_ad(x):
     x = x.replace("İ", "i").replace("I", "ı").lower()

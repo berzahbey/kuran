@@ -138,6 +138,7 @@ function md(t){ // basit markdown
   t=t.replace(/(^|\n)((?:\s*[-*] .*(?:\n|$))+)/g,(m,a,b)=>a+"<ul>"+b.trim().split("\n").map(l=>"<li>"+l.replace(/^\s*[-*] /,"")+"</li>").join("")+"</ul>");
   return t.replace(/\n\n/g,"<br><br>").replace(/([^>])\n/g,"$1<br>");
 }
+const DILLER={Turkish:"Türkçe",Dutch:"Hollandaca",English:"İngilizce",German:"Almanca",French:"Fransızca",Bosnian:"Boşnakça",Azerbaijani:"Azerice"};
 const D={arapca:(()=>{try{return localStorage.getItem("arapca")==="1"}catch(e){return false}})(),yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
 
 function arapcaDegistir(){D.arapca=!D.arapca;try{localStorage.setItem("arapca",D.arapca?"1":"0")}catch(e){};arapcaUygula()}
@@ -147,7 +148,7 @@ async function basla(){
   try{D.yz=(await api("/api/ayarlar")).yapay_zeka}catch(e){D.yz=false}
   D.sureler=await api("/api/sureler"); sureListe();
   const ml=await api("/api/meal-kaynaklari"); const sel=$("#mealSec");
-  sel.innerHTML='<option value="">— yok —</option>'+ml.filter(m=>["Turkish","English","Azerbaijani","German","French","Bosnian"].includes(m.dil)).map(m=>`<option value="${m.id}">${esc(m.dil==="Turkish"?"":m.dil+": ")}${esc(m.yazar)}</option>`).join("");
+  sel.innerHTML='<option value="">— yok —</option>'+ml.filter(m=>DILLER[m.dil]).sort((a,b)=>Object.keys(DILLER).indexOf(a.dil)-Object.keys(DILLER).indexOf(b.dil)).map(m=>`<option value="${m.id}">${esc(m.dil==="Turkish"?"":DILLER[m.dil]+": ")}${esc(m.yazar)}</option>`).join("");
   sel.value=D.meal; sel.onchange=()=>{D.meal=sel.value;try{localStorage.setItem("karsilastir",D.meal)}catch(e){};if(D.s)sureAc(D.s,D.a)};
   const h=location.hash.match(/(\d+)(?::(\d+))?/); sureAc(h?+h[1]:68,h&&h[2]?+h[2]:null);
 }
@@ -248,7 +249,7 @@ async function karsilastirSekme(){
   const ciz=()=>{
    const kelime=w=>{const tek=w.kok&&w.oran*d.sayi<=1;const c=tek?"k-tek":renk(w.oran);const sec=karSecili&&w.kok===karSecili?" k-sec":"";
      return `<span class="${c}${sec}${w.ek?" k-ek":""}" ${w.kok?`data-k="${w.kok}" title="${Math.round(w.oran*d.sayi)}/${d.sayi} meal"`:""}>${esc(w.t)}</span>`};
-   ic(`<div class="cipler">${[["Turkish","Türkçe"],["English","İngilizce"],["Arabic","Arapça"],["German","Almanca"],["French","Fransızca"],["Bosnian","Boşnakça"],["Azerbaijani","Azerice"]].map(([x,y])=>`<span class="cip ${x===karDil?"aktif":""}" data-dil="${x}">${y}</span>`).join("")}<span class="cip" onclick="meallerSekme()">Tüm diller (492) →</span></div>
+   ic(`<div class="cipler">${[["Turkish","Türkçe"],["English","İngilizce"],["Arabic","Arapça"],["Dutch","Hollandaca"],["German","Almanca"],["French","Fransızca"],["Bosnian","Boşnakça"],["Azerbaijani","Azerice"]].map(([x,y])=>`<span class="cip ${x===karDil?"aktif":""}" data-dil="${x}">${y}</span>`).join("")}<span class="cip" onclick="meallerSekme()">Tüm diller (492) →</span></div>
     <p class="kucuk">${d.sayi} farklı meal karşılaştırıldı. Renkler: <span class="k-orta">bazı meallerin tercihi</span> · <span class="k-az">az kişinin tercihi</span> · <span class="k-tek">sadece bu meal</span> · <span class="k-ek">(parantez içi ekleme)</span>. Bir kelimeye tıklayınca o tercihi yapan mealler işaretlenir.</p>
     <div class="grup"><h4>Ortak anlam (meallerin çoğunda)</h4><div class="cipler">${d.ortak.map(o=>`<span class="cip" data-k="${o.kok}">${esc(o.ornek)} · ${o.sayi}</span>`).join("")}</div></div>
     <div class="grup"><h4>Ayrışan tercihler</h4><div class="cipler">${d.ayrisan.slice(0,40).map(o=>`<span class="cip ${o.kok===karSecili?"aktif":""}" data-k="${o.kok}">${esc(o.ornek)} · ${o.sayi}</span>`).join("")}</div></div>

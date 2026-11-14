@@ -431,8 +431,13 @@ def ana(): return FileResponse(os.path.join(BURASI, "static", "index.html"))
 # ---------------- Meal karşılaştırma (yapay zekâsız): aynı / farklı tercihler ----------------
 _DUR = set("ve bir bu şu o da de ki ile için gibi ne ya hem ise ama fakat çünkü artık işte en daha çok her hiç olan olarak onlar onları onların onlara onu onun ona sen seni senin sana siz sizi sizin size biz bizi bizim bize ben beni benim bana kendi şey şeyi diye ancak eğer şüphesiz muhakkak gerçekten elbette kuşkusuz doğrusu hani".split())
 _TR_KUCUK = str.maketrans("İIÂÎÛ", "iıâîû")
+_DUR_DIL = {
+ "Dutch": set("jou je jij mij me ik ons onze uw eene den der des hen hun zich zichzelf de het een en van in is die dat niet zijn voor op met te hij zij ze wij jullie u gij hem haar hun tot aan er als maar ook dan zal zullen zult werd worden door bij uit naar om over of al wat wie waar hoe dit deze zo noch nog geen heeft hebben had was waren wordt want waarlijk voorwaar zeker".split()),
+ "English": set("the a an and of to in is are was were be been for on with that this it he she they them his her their you your we our not by from as at but or which who whom will shall has have had do does did so no nor then there these those indeed verily truly unto thee thou thy ye".split()),
+}
 
-def _kelimeler(metin):
+def _kelimeler(metin, dil="Turkish"):
+    dur = _DUR_DIL.get(dil, _DUR)
     out, parantez = [], 0
     for m in re.finditer(r"[\(\)\[\]]|[^\s\(\)\[\]]+", metin):
         p = m[0]
@@ -441,7 +446,7 @@ def _kelimeler(metin):
         temiz = re.sub(r"[^\wâîûçğıöşü'’]", "", p.translate(_TR_KUCUK).lower()).replace("’", "'")
         kok = re.split("'", temiz)[0]
         kok = kok.replace("â", "a").replace("î", "i").replace("û", "u")
-        out.append({"t": p, "kok": kok[:5] if len(kok) > 2 and kok not in _DUR else "", "ek": parantez > 0})
+        out.append({"t": p, "kok": kok[:5] if len(kok) > 2 and kok not in dur else "", "ek": parantez > 0})
     return out
 
 @app.get("/api/ayet/{s}/{a}/karsilastir")
@@ -458,7 +463,7 @@ def karsilastir(s: int, a: int, dil: str = "Turkish"):
         gorulen.add(k); tekil.append(m)
     n = len(tekil)
     for m in tekil:
-        m["kelimeler"] = _kelimeler(m["metin"]); m["koklar"] = {w["kok"] for w in m["kelimeler"] if w["kok"]}
+        m["kelimeler"] = _kelimeler(m["metin"], dil); m["koklar"] = {w["kok"] for w in m["kelimeler"] if w["kok"]}
     sayac = {}
     for m in tekil:
         for k in m["koklar"]: sayac.setdefault(k, []).append(m["id"])
