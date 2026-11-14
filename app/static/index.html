@@ -34,6 +34,16 @@ main#metin{overflow:auto;padding:16px 22px}
 .ayet{background:var(--kart);border:1px solid var(--cizgi);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:.1s}
 .ayet:hover{border-color:#b8d4ca}.ayet.secili{border-color:var(--vurgu);box-shadow:0 0 0 2px var(--vurgu2);background:var(--sec)}
 .ayet .ar{font-family:AmiriQuran,Amiri,serif;font-size:27px;line-height:2.15;direction:rtl;text-align:right}
+body.arapca-gizli main .ayet .ar,body.arapca-gizli main .besmele{display:none}
+.besmele-sade{display:none;text-align:center;font-family:Georgia,serif;font-style:italic;color:var(--soluk);margin:0 0 16px}
+body.arapca-gizli main .besmele-sade{display:block}
+.sade-no{display:none;font-size:11px;color:#b5b0a4;margin-right:8px;font-family:system-ui;vertical-align:2px}
+body.arapca-gizli .sade-no{display:inline}
+body.arapca-gizli main .ayet{padding:9px 14px;margin-bottom:6px;border-color:transparent;background:transparent}
+body.arapca-gizli main .ayet:hover{background:var(--kart);border-color:var(--cizgi)}
+body.arapca-gizli main .ayet.secili{background:var(--sec);border-color:var(--vurgu)}
+body.arapca-gizli main .ayet .yalin{margin-top:0;font-size:18px}
+header button.acik{background:#fff;color:var(--vurgu)}
 .ayet .yalin{margin-top:6px;font-size:17px;line-height:1.55;font-family:Georgia,"Times New Roman",serif}
 .ayet .yalin.eksik{color:#b0aca2;font-style:italic;font-size:14px;font-family:inherit}
 .besmele-tr{font-family:Georgia,serif;font-style:italic;font-size:14px;color:var(--soluk)}
@@ -96,6 +106,7 @@ mark{background:#ffe9a8}
   <h1>☾ Dedplay Kur'an Çalışma</h1>
   <input id="ara" placeholder="Ara: Arapça veya Türkçe (örn. القلم, sabır)…">
   <label style="font-size:13px;white-space:nowrap">Karşılaştır: <select id="mealSec" title="Yalın mealin altında gösterilecek karşılaştırma meali"></select></label>
+  <button id="arDugme" onclick="arapcaDegistir()" title="Arapça aslını göster/gizle">ع Arapça</button>
   <button onclick="notlarAc()">Notlarım</button>
   <button onclick="kitapAc()">E-Kitap</button>
   <button onclick="kaynakAc()">Kaynaklar</button>
@@ -119,9 +130,12 @@ function md(t){ // basit markdown
   t=t.replace(/(^|\n)((?:\s*[-*] .*(?:\n|$))+)/g,(m,a,b)=>a+"<ul>"+b.trim().split("\n").map(l=>"<li>"+l.replace(/^\s*[-*] /,"")+"</li>").join("")+"</ul>");
   return t.replace(/\n\n/g,"<br><br>").replace(/([^>])\n/g,"$1<br>");
 }
-const D={yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
+const D={arapca:(()=>{try{return localStorage.getItem("arapca")==="1"}catch(e){return false}})(),yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
 
+function arapcaDegistir(){D.arapca=!D.arapca;try{localStorage.setItem("arapca",D.arapca?"1":"0")}catch(e){};arapcaUygula()}
+function arapcaUygula(){document.body.classList.toggle("arapca-gizli",!D.arapca);$("#arDugme").classList.toggle("acik",D.arapca)}
 async function basla(){
+  arapcaUygula();
   try{D.yz=(await api("/api/ayarlar")).yapay_zeka}catch(e){D.yz=false}
   D.sureler=await api("/api/sureler"); sureListe();
   const ml=await api("/api/meal-kaynaklari"); const sel=$("#mealSec");
@@ -147,10 +161,10 @@ async function sureAc(s,a=null){
   const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
   $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${esc(d.ad)} Sûresi</h2>
    <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet${hazir<b.ayet?` · yalın meal ${hazir}/${b.ayet} hazır`:""} · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a></span></div>
-   ${s!==1&&s!==9?'<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr">Rahmân ve Rahîm olan Allah\'ın adıyla</div></div>':""}`+
+   ${s!==1&&s!==9?'<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr">Rahmân ve Rahîm olan Allah\'ın adıyla</div></div><div class="besmele-sade">Rahmân ve Rahîm olan Allah\'ın adıyla</div>':""}`+
    d.ayetler.map(x=>`<div class="ayet" id="ay${x.a}" onclick="ayetSec(${s},${x.a})">
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
-     ${x.yalin?`<div class="yalin">${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:'<div class="yalin eksik">Yalın meal henüz hazırlanmadı.</div>'}
+     ${x.yalin?`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:`<div class="yalin eksik"><span class="sade-no">${x.a}</span>Yalın meal henüz hazırlanmadı.</div>`}
      ${x.meal?`<div class="meal"><span class="kucuk">${esc(kars)}:</span> ${esc(x.meal)}</div>`:""}
      ${x.not?`<div class="ust"><span></span><span>✎ ${x.not} not</span></div>`:""}</div>`).join("");
   if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
@@ -322,10 +336,10 @@ async function notlarAc(q=""){const n=await api("/api/notlar?q="+encodeURICompon
    ${n.map(x=>`<div class="not" style="cursor:pointer" onclick="modalKapat();sureAc(${x.s},${x.a||"null"});${x.a?"":`setTimeout(()=>ayetSec(${x.s},0),300)`}"><b>${esc(x.sure)} ${x.s}${x.a?":"+x.a:" (genel)"}</b>${x.etiket?' <span class="rozet">#'+esc(x.etiket)+"</span>":""}<div>${esc(x.metin).replace(/\n/g,"<br>")}</div></div>`).join("")}`);
   $("#notAra").onchange=e=>notlarAc(e.target.value);}
 async function kitapAc(){const s=D.sureler.filter(x=>x.yalin);
-  modalAc(`<h2 style="margin-top:0">E-Kitap (EPUB)</h2><p>Her ayette Arapça aslı + yalın Türkçe meal; dipnotlar numaraya dokununca açılır.</p>
+  modalAc(`<h2 style="margin-top:0">E-Kitap (EPUB)</h2><p>Yalın Türkçe meal; dipnotlar numaraya dokununca açılır. İsterseniz her ayetin Arapça aslı da eklenir.</p>
    ${s.length?`<div class="cipler">${s.map(x=>`<label class="cip"><input type="checkbox" class="kSure" value="${x.s}" checked> ${x.s}. ${esc(x.ad)} (${x.yalin}/${x.ayet})</label>`).join("")}</div>
-   <label><input type="checkbox" id="kOnay"> Sadece onaylı ayetler</label><p><button class="btn" onclick="kitapIndir()">EPUB indir</button></p>`:'<p class="kucuk">Henüz yalın meal girilmiş ayet yok.</p>'}`)}
-function kitapIndir(){const s=[...document.querySelectorAll(".kSure:checked")].map(x=>x.value).join(",");location.href=`/api/kitap.epub?sureler=${s}&sadece_onayli=${$("#kOnay").checked}`}
+   <label><input type="checkbox" id="kArapca"> Arapça aslını da ekle</label><br><label><input type="checkbox" id="kOnay"> Sadece onaylı ayetler</label><p><button class="btn" onclick="kitapIndir()">EPUB indir</button></p>`:'<p class="kucuk">Henüz yalın meal girilmiş ayet yok.</p>'}`)}
+function kitapIndir(){const s=[...document.querySelectorAll(".kSure:checked")].map(x=>x.value).join(",");location.href=`/api/kitap.epub?sureler=${s}&sadece_onayli=${$("#kOnay").checked}&arapca=${$("#kArapca").checked}`}
 async function kaynakAc(){const d=await api("/api/durum");const y=(a,b)=>b?Math.round(a/b*100)+"%":"-";
   modalAc(`<h2 style="margin-top:0">Kaynaklar</h2><p class="kucuk">Uygulama her şeyi kendi veritabanında tutar. Yerelde olmayan bir şey açılırsa internetten çekilip kaydedilir. "Tümünü indir" ile bütün külliyat bir kerede sunucuya alınır (internetsiz çalışır).</p>
    <div class="istat"><div><b>${d.ayet_metni.toLocaleString()}</b>Arapça ayet metni (Hafs + 7 kıraat)</div><div><b>${d.kelime.toLocaleString()}</b>kelime/morfoloji parçası</div>

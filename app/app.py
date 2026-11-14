@@ -225,7 +225,7 @@ def yalin_kaydet(s: int, a: int, d: dict = Body(...)):
     return tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a)
 
 @app.get("/api/kitap.epub")
-def kitap_indir(sureler: str = "", sadece_onayli: bool = False):
+def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = False):
     secili = [int(x) for x in sureler.split(",") if x] or sorted({r["s"] for r in satirlar("SELECT DISTINCT s FROM yalin_meal")})
     bilgi = {r["s"]: r["ad_ar"] for r in satirlar("SELECT * FROM sure_bilgi")}
     kitap_s = []
@@ -247,7 +247,7 @@ def kitap_indir(sureler: str = "", sadece_onayli: bool = False):
         kitap_s.append({"s": s, "ad": V.SURE_ADLARI[s - 1], "ad_ar": bilgi.get(s, ""), "ayetler": ayetler, "dipnotlar": dipnot})
     if not kitap_s: raise HTTPException(404, "Kitaba girecek yalın meal yok.")
     ad = "Yalin_Meal_" + "-".join(str(x["s"]) for x in kitap_s)[:60] + ".epub"
-    return Response(kitap.epub_yap(kitap_s), media_type="application/epub+zip", headers={"Content-Disposition": f'attachment; filename="{ad}"'})
+    return Response(kitap.epub_yap(kitap_s, arapca=arapca), media_type="application/epub+zip", headers={"Content-Disposition": f'attachment; filename="{ad}"'})
 
 # ---------------- Yapay zekâ: görüş analizi, yalın meal önerisi, Lane çevirisi ----------------
 def claude(sistem, mesaj, max_tokens=4000):

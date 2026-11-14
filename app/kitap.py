@@ -12,6 +12,7 @@ h1 .ar{display:block;font-family:"AmiriQuran",serif;font-size:1.1em;margin-botto
 .ayet{margin:0 0 1.3em}
 p.ar{font-family:"AmiriQuran",serif;font-size:1.45em;text-align:right;line-height:2.1;margin:0 0 .25em}
 p.tr{margin:0;text-align:justify}
+p.tr.sade{margin:0 0 .7em}
 .no{font-family:"AmiriQuran",serif}
 a.noteref{vertical-align:super;font-size:.7em;text-decoration:none;font-weight:bold}
 aside.dipnot{font-size:.9em;margin:.6em 0}
@@ -27,7 +28,7 @@ def _xhtml(baslik, govde):
             'xmlns:epub="http://www.idpf.org/2007/ops" lang="tr" xml:lang="tr"><head><meta charset="utf-8"/>'
             f'<title>{html.escape(baslik)}</title><link rel="stylesheet" href="stil.css"/></head><body>{govde}</body></html>')
 
-def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar="Dedplay"):
+def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar="Dedplay", arapca=True):
     """sureler: [{"s":68, "ad":"Kalem", "ad_ar":"القلم", "ayetler":[{"a":1,"arapca":"...","meal":"...[1]..."}], "dipnotlar":{"1":"..."}}]"""
     bolumler = []
     for d in sureler:
@@ -37,10 +38,13 @@ def epub_yap(sureler, baslik="Kur'ân-ı Kerîm — Yalın Türkçe Meal", yazar
             t = re.sub(r"\[(\d+)\]", lambda m: f'<a epub:type="noteref" class="noteref" id="{fid}-r{m[1]}" href="#{fid}-n{m[1]}">{m[1]}</a>', t)
             ar = html.escape(ay["arapca"])
             # Fâtiha'nın 1. ayeti besmeledir; ayrı besmele basılmaz
-            paras.append(f'<div class="ayet"><p class="ar" lang="ar" dir="rtl">{ar} <span class="no">﴿{str(ay["a"]).translate(AR_RAKAM)}﴾</span></p><p class="tr">{t}</p></div>')
+            if arapca:
+                paras.append(f'<div class="ayet"><p class="ar" lang="ar" dir="rtl">{ar} <span class="no">﴿{str(ay["a"]).translate(AR_RAKAM)}﴾</span></p><p class="tr">{t}</p></div>')
+            else:
+                paras.append(f'<p class="tr sade">{t}</p>')
         notlar = "".join(f'<aside epub:type="footnote" class="dipnot" id="{fid}-n{k}"><p><a class="geri" href="#{fid}-r{k}">{k}.</a> {html.escape(v)}</p></aside>'
                          for k, v in sorted(d.get("dipnotlar", {}).items(), key=lambda x: int(x[0])))
-        besm = "" if s in (1, 9) else f'<div class="besmele"><span class="ar" lang="ar" dir="rtl">{BESMELE_AR}</span><span class="tr">Rahmân ve Rahîm olan Allah\'ın adıyla</span></div>'
+        besm = "" if s in (1, 9) else (f'<div class="besmele">' + (f'<span class="ar" lang="ar" dir="rtl">{BESMELE_AR}</span>' if arapca else "") + '<span class="tr">Rahmân ve Rahîm olan Allah\'ın adıyla</span></div>')
         govde = (f'<section epub:type="chapter"><h1><span class="ar" lang="ar" dir="rtl">{html.escape(d.get("ad_ar",""))}</span>'
                  f'{html.escape(d["ad"])} Sûresi</h1>{besm}{"".join(paras)}'
                  + (f'<section class="notlar" epub:type="footnotes"><h2>Dipnotlar</h2>{notlar}</section>' if notlar else "") + "</section>")
