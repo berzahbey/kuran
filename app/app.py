@@ -91,9 +91,12 @@ def osm_eksikleri_tamamla():
 OZEL_KLASOR = os.path.join(os.path.dirname(os.path.abspath(V.DB_YOL)), "ozel")
 c.execute("CREATE TABLE IF NOT EXISTS ozel_sayfa(id TEXT, s INT, a INT, sayfa INT, PRIMARY KEY(id,s,a))")
 c.execute("CREATE TABLE IF NOT EXISTS ozel_meal(id TEXT PRIMARY KEY, pdf TEXT, ozet TEXT)")
+c.execute("CREATE TABLE IF NOT EXISTS ozel_kesit(id TEXT, s INT, a INT, kesit TEXT, PRIMARY KEY(id,s,a))")
 c.execute("CREATE TABLE IF NOT EXISTS meal_dipnot(id TEXT, s INT, a INT, dipnotlar TEXT, PRIMARY KEY(id,s,a))")
 
 DEPO_MEALLER = os.path.join(BURASI, "..", "mealler")
+
+RESIM = "\u27e6resim\u27e7"   # resimli meallerde metin yerine konan işaret
 
 def ozel_yukle():
     """Depodaki mealler/*.json ve sunucudaki /veri/ozel/*.json → meal tablosuna (içerik değişince yeniden).
@@ -107,11 +110,14 @@ def ozel_yukle():
         d = json.loads(ham); mid = d["id"]
         if c.execute("SELECT 1 FROM ozel_meal WHERE id=? AND ozet=?", (mid, ozet)).fetchone(): continue
         with V._kilit:
-            for tablo in ("meal", "meal_sure", "ozel_sayfa", "meal_dipnot"): c.execute(f"DELETE FROM {tablo} WHERE id=?", (mid,))
+            for tablo in ("meal", "meal_sure", "ozel_sayfa", "meal_dipnot", "ozel_kesit"): c.execute(f"DELETE FROM {tablo} WHERE id=?", (mid,))
             c.execute("INSERT OR REPLACE INTO meal_kaynak VALUES(?,?,?,?)", (mid, d.get("dil", "Ottoman"), d.get("yazar", mid), d.get("yon", "rtl")))
             for s, ayetler in d["ayetler"].items():
                 for a, x in ayetler.items():
-                    if x.get("metin"): c.execute("INSERT OR REPLACE INTO meal VALUES(?,?,?,?)", (mid, int(s), int(a), x["metin"]))
+                    if x.get("kesit"):  # resimli meal: metin yerine kitaptan kesilmiş ayet resmi
+                        c.execute("INSERT OR REPLACE INTO ozel_kesit VALUES(?,?,?,?)", (mid, int(s), int(a), json.dumps(x["kesit"])))
+                        c.execute("INSERT OR REPLACE INTO meal VALUES(?,?,?,?)", (mid, int(s), int(a), RESIM))
+                    elif x.get("metin"): c.execute("INSERT OR REPLACE INTO meal VALUES(?,?,?,?)", (mid, int(s), int(a), x["metin"]))
                     if x.get("sayfa"): c.execute("INSERT OR REPLACE INTO ozel_sayfa VALUES(?,?,?,?)", (mid, int(s), int(a), int(x["sayfa"])))
                     if x.get("dipnotlar"): c.execute("INSERT OR REPLACE INTO meal_dipnot VALUES(?,?,?,?)", (mid, int(s), int(a), json.dumps(x["dipnotlar"], ensure_ascii=False)))
             c.executemany("INSERT OR REPLACE INTO meal_sure VALUES(?,?)", [(mid, s) for s in range(1, 115)])  # internetten aranmasın
@@ -130,6 +136,34 @@ def ozel_sayfa(mid: str, n: int):
     if not os.path.exists(hedef + ".png"):
         subprocess.run(["pdftoppm", "-f", str(n), "-l", str(n), "-r", "150", "-png", "-singlefile", pdf, hedef], check=True, timeout=60)
     return FileResponse(hedef + ".png", media_type="image/png")
+
+def _pdf_sayfa(mid, pdf, n, dpi=200):
+    onb = os.path.join(OZEL_KLASOR, "onbellek"); os.makedirs(onb, exist_ok=True)
+    hedef = os.path.join(onb, f"{mid}_{dpi}_{n:04d}")
+    if not os.path.exists(hedef + ".png"):
+        subprocess.run(["pdftoppm", "-f", str(n), "-l", str(n), "-r", str(dpi), "-gray", "-png", "-singlefile", pdf, hedef], check=True, timeout=60)
+    return hedef + ".png"
+
+@app.get("/api/resim/{mid}/{s}/{a}.png")
+def ayet_resmi(mid: str, s: int, a: int):
+    """Resimli mealde ayetin kitaptan kesilmiş görüntüsü (kesit: [sayfa, x0, y0, x1, y1] oranları, sağa yaslı alt alta)."""
+    r = tek("SELECT pdf FROM ozel_meal WHERE id=?", mid); k = tek("SELECT kesit FROM ozel_kesit WHERE id=? AND s=? AND a=?", mid, s, a)
+    if not r or not k: raise HTTPException(404, "Bu ayetin resmi yok.")
+    pdf = os.path.join(OZEL_KLASOR, os.path.basename(r["pdf"] or ""))
+    if not os.path.exists(pdf): raise HTTPException(404, f"PDF bulunamadı: {os.path.basename(pdf)} dosyasını sunucuda {OZEL_KLASOR} içine koyun.")
+    onb = os.path.join(OZEL_KLASOR, "onbellek", mid); os.makedirs(onb, exist_ok=True)
+    hedef = os.path.join(onb, f"{s:03d}_{a:03d}_{hashlib.sha1(k['kesit'].encode()).hexdigest()[:8]}.png")
+    if not os.path.exists(hedef):
+        from PIL import Image
+        parca = []
+        for p, x0, y0, x1, y1 in json.loads(k["kesit"]):
+            im = Image.open(_pdf_sayfa(mid, pdf, p)).convert("L"); W, H = im.size
+            parca.append(im.crop((int(x0 * W), int(y0 * H), int(x1 * W), int(y1 * H))))
+        w = max(x.width for x in parca); h = sum(x.height for x in parca)
+        out = Image.new("L", (w, h), 255); y = 0
+        for x in parca: out.paste(x, (w - x.width, y)); y += x.height
+        out.save(hedef, optimize=True)
+    return FileResponse(hedef, media_type="image/png", headers={"Cache-Control": "max-age=604800"})
 
 # ---------------- Onaylı meal dosyaları (GitHub'daki onayli/ klasörü) ----------------
 ONAYLI_KLASOR = os.path.join(BURASI, "..", "onayli")
@@ -195,7 +229,9 @@ def sure(s: int, meal: str = ""):
     ns = {r["a"]: r["n"] for r in satirlar("SELECT a, count(*) n FROM notlar WHERE s=? GROUP BY a", s)}
     yon = (tek("SELECT yon FROM meal_kaynak WHERE id=?", meal) or {}).get("yon", "ltr") if meal else "ltr"
     sayfa = {r["a"]: r["sayfa"] for r in satirlar("SELECT a, sayfa FROM ozel_sayfa WHERE id=? AND s=?", meal, s)} if meal else {}
-    return {"s": s, "ad": V.SURE_ADLARI[s - 1], "meal_yon": yon, "meal_sayfa": sayfa, "ayetler": [
+    resimli = any(v == RESIM for v in ml.values())
+    if resimli: ml = {a_: f"/api/resim/{meal}/{s}/{a_}.png" for a_ in ml}
+    return {"s": s, "ad": V.SURE_ADLARI[s - 1], "meal_yon": yon, "meal_sayfa": sayfa, "meal_resim": resimli, "ayetler": [
         {"a": a, "arapca": ar.get(a, ""), "meal": ml.get(a, ""), "yalin": (yl.get(a) or {}).get("metin"),
          "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"),
          "yalin_osm": (yl.get(a) or {}).get("metin_osm"), "dipnotlar_osm": json.loads((yl.get(a) or {}).get("dipnotlar_osm") or "[]"),
@@ -240,6 +276,7 @@ def mealler(s: int, a: int, dil: str = ""):
         if r["id"].endswith("-la") and r["dil"] != "Turkish": continue  # Latin harf çevriyazı kopyaları
         if r["id"].endswith("-la") and r["dil"] == "Turkish": continue
         r["yazar"] = V.YAZAR_ADI.get(r["id"], r["yazar"])
+        if r["metin"] == RESIM: r["metin"] = ""; r["resim"] = f"/api/resim/{r['id']}/{s}/{a}.png"
         sp = tek("SELECT sayfa FROM ozel_sayfa WHERE id=? AND s=? AND a=?", r["id"], s, a)
         if sp: r["sayfa"] = sp["sayfa"]
         sonuc.setdefault(r["dil"], []).append(r)
@@ -590,7 +627,7 @@ def _kelimeler(metin, dil="Turkish"):
 @app.get("/api/ayet/{s}/{a}/karsilastir")
 def karsilastir(s: int, a: int, dil: str = "Turkish"):
     gruplar = mealler(s, a, dil)
-    liste = [m for g in gruplar for m in g["mealler"] if not m["id"].startswith("tur-latinalphabet")]
+    liste = [m for g in gruplar for m in g["mealler"] if not m["id"].startswith("tur-latinalphabet") and not m.get("resim")]
     yalin = tek("SELECT metin FROM yalin_meal WHERE s=? AND a=?", s, a)
     if yalin and dil == "Turkish":
         liste = [{"id": "yalin", "yazar": "★ Yalın meal", "metin": re.sub(r"\[\d+\]", "", yalin["metin"])}] + liste
