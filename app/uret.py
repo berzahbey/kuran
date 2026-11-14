@@ -97,6 +97,7 @@ def sure_uret(c, s, bolum=5, kuru=False, log=print):
         mesaj = (f"SURE: {s}. {sure_ad}\n" + (f"Önceki ayetlerin yalın meali (bağlam için):\n{baglam}\n\n" if baglam else "")
                  + "\n\n".join(ayet_paketi(c, s, a) for a in grup)
                  + f"\n\nGÖREV: {', '.join(f'{s}:{a}' for a in grup)} ayetlerinin yalın mealini yaz.")
+        if not kuru: log(f"  {s}:{grup[0]}-{grup[-1]} gönderiliyor (~{len(mesaj)//3:,} token)")
         if kuru:
             print(mesaj); print(f"\n--- paket: {len(mesaj)} karakter (~{len(mesaj)//3} token) ---"); return 0, {}
         while True:
@@ -107,7 +108,7 @@ def sure_uret(c, s, bolum=5, kuru=False, log=print):
         toplam["input_tokens"] += len(mesaj) // 3; toplam["output_tokens"] += len(metin) // 3
         m = re.search(r"\{.*\}", metin, re.S)
         try: sonuc = json.loads(m[0])["ayetler"]
-        except Exception: log(f"  {s}:{grup} JSON okunamadı, atlandı"); continue
+        except Exception: log(f"  {s}:{grup[0]}-{grup[-1]} yanıt okunamadı, atlandı · yanıtın başı: {metin[:150]!r}"); continue
         with V._kilit:
             for x in sonuc:
                 a = int(x["a"])

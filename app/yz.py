@@ -8,7 +8,18 @@ Ortam değişkenleri:
   YZ_DAKIKADA   dakikada en fazla istek (ücretsiz katmanlar için yavaşlatma; varsayılan gemini 8, diğer 20)
 Geriye dönük: ANTHROPIC_API_KEY tanımlıysa anthropic kullanılır.
 """
-import json, os, threading, time, urllib.request, urllib.error
+import json, os, re, sys, threading, time, urllib.request, urllib.error
+
+def _kayit(m): print(time.strftime("%H:%M:%S"), "  [yz]", m, flush=True)
+
+def _ozet(hata):
+    """Sağlayıcının hata JSON'undan kısa, okunur mesaj çıkar."""
+    try:
+        d = json.loads(hata); d = d[0] if isinstance(d, list) else d
+        e = d.get("error", d); m = e.get("message") if isinstance(e, dict) else str(e)
+        return re.sub(r"\s+", " ", m or hata)[:300]
+    except Exception:
+        return re.sub(r"\s+", " ", hata)[:300]
 
 # Anahtarın biçiminden sağlayıcıyı tanı (yanlış satıra yazılsa da doğru yere gitsin)
 def _tani(anahtar):
@@ -76,13 +87,18 @@ def sohbet(sistem, mesaj, max_tokens=4000, json_cikti=False, deneme=6):
         except urllib.error.HTTPError as e:
             hata = e.read().decode(errors="ignore")[:500]
             if e.code == 429:
-                if any(k in hata.lower() for k in ("per day", "perday", "daily", "requests_per_day", "quota exceeded for metric")) and i >= 1:
-                    raise KotaDoldu(hata)
-                time.sleep(min(300, 30 * (i + 1))); continue
+                kisa = _ozet(hata)
+                if any(k in hata.lower() for k in ("per day", "perday", "daily", "requests_per_day", "per_day")) and i >= 1:
+                    raise KotaDoldu(kisa)
+                if re.search(r"limit:\s*0\b", hata):  # bu model ücretsiz katmanda hiç yok
+                    raise RuntimeError(f"YZ 429: bu model ücretsiz katmanda kullanılamıyor, YZ_MODEL'i değiştirin. ({kisa})")
+                bekle = min(300, 30 * (i + 1)); _kayit(f"429 sınır: {bekle} sn bekleyip tekrar denenecek ({i+1}/{deneme}) · {kisa}")
+                time.sleep(bekle); continue
             if e.code == 400 and json_cikti and "response_format" in govde:
-                govde.pop("response_format"); continue  # bazı sağlayıcılar desteklemiyor
-            if e.code in (500, 502, 503, 504, 529): time.sleep(20 * (i + 1)); continue
-            raise RuntimeError(f"YZ {e.code}: {hata}")
+                _kayit("sağlayıcı JSON biçimini desteklemiyor, düz metinle tekrar"); govde.pop("response_format"); continue
+            if e.code in (500, 502, 503, 504, 529):
+                _kayit(f"{e.code} sunucu hatası, {20*(i+1)} sn sonra tekrar · {_ozet(hata)}"); time.sleep(20 * (i + 1)); continue
+            raise RuntimeError(f"YZ {e.code}: {_ozet(hata)}")
         except (urllib.error.URLError, TimeoutError) as e:
-            hata = str(e); time.sleep(15 * (i + 1))
+            hata = str(e); _kayit(f"bağlantı sorunu, tekrar denenecek · {hata[:200]}"); time.sleep(15 * (i + 1))
     raise RuntimeError("YZ yanıt vermedi: " + hata)
