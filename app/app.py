@@ -414,6 +414,8 @@ def uretim_durum():
 def uretim_baslat(d: dict = Body(default={})):
     if not yz.hazir(): raise HTTPException(400, "Yapay zekâ tanımlı değil (YZ_ANAHTAR).")
     if _uretim["surec"] is not None and _uretim["surec"].poll() is None: return {"durum": "zaten çalışıyor"}
+    try: secim = V.sure_listesi_coz(d.get("sureler") or "1-114")
+    except ValueError as e: raise HTTPException(400, f"Sure listesi anlaşılamadı: {e}")
     _uretim["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "uret.py"), "--sureler", d.get("sureler") or "1-114", "--paket", os.environ.get("URETIM_PAKET", "tam")],
                                         stdout=open(_uretim["log"], "a"), stderr=subprocess.STDOUT)
     return {"durum": "başladı"}

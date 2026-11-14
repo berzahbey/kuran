@@ -126,10 +126,8 @@ def main():
     ap.add_argument("--bolum", type=int, default=5, help="bir istekte kaç ayet")
     ap.add_argument("--kuru", action="store_true", help="yapay zekâya göndermeden ilk paketi göster")
     a = ap.parse_args()
-    sureler = []
-    for p in a.sureler.split(","):
-        if "-" in p: x, y = map(int, p.split("-")); sureler += range(x, y + 1)
-        else: sureler.append(int(p))
+    try: sureler = V.sure_listesi_coz(a.sureler)
+    except ValueError as e: sys.exit(f"Sure listesi hatalı: {e}")
     c = V.baglan(); V.sema_kur(c)
     c.execute("CREATE TABLE IF NOT EXISTS yalin_meal(s INT, a INT, metin TEXT, dipnotlar TEXT, durum TEXT DEFAULT 'taslak', guncelleme TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(s,a))")
     V.arapca_yukle(c); V.morfoloji_yukle(c); V.meal_kaynaklari_yukle(c); V.tefsir_kaynaklari_yukle(c)

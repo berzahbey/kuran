@@ -260,3 +260,32 @@ YAZAR_ADI = {"tur-abdulbakigolpin": "Abdülbâki Gölpınarlı", "tur-ademugur":
  "tur-shabanbritch": "Şaban Britch", "tur-suatyildirim": "Suat Yıldırım", "tur-suleymanates": "Süleyman Ateş",
  "tur-tefhimulkuran": "Tefhîmu'l-Kur'an (Mevdûdî)", "tur-wwwislamhouseco": "IslamHouse", "tur-yasarnuriozturk": "Yaşar Nuri Öztürk",
  "tur-yasarnuriozturk1": "Yaşar Nuri Öztürk (2)", "tur-ynozturk": "Yaşar Nuri Öztürk (3)"}
+
+def _sade_ad(x):
+    x = x.replace("İ", "i").replace("I", "ı").lower()
+    x = unicodedata.normalize("NFKD", x)
+    x = "".join(ch for ch in x if not unicodedata.combining(ch))
+    return re.sub(r"[^a-z0-9]", "", x.translate(str.maketrans("çğıöşü", "cgiosu")))
+
+def sure_listesi_coz(metin):
+    """'68', '78-114', '1,2,112', 'ihlas', 'Felak, Nâs', 'kalem-mülk' → sure numaraları. Anlaşılmayan parça için ValueError."""
+    adlar = {_sade_ad(a): i + 1 for i, a in enumerate(SURE_ADLARI)}
+    def tek(p):
+        p = p.strip()
+        if p.isdigit():
+            n = int(p)
+            if 1 <= n <= 114: return n
+            raise ValueError(f"'{p}' geçerli sure numarası değil (1-114)")
+        s = adlar.get(_sade_ad(p))
+        if not s:
+            aday = [n for a, n in adlar.items() if a.startswith(_sade_ad(p))]
+            if len(aday) == 1: s = aday[0]
+        if not s: raise ValueError(f"'{p}' sure adı anlaşılamadı")
+        return s
+    sonuc = []
+    for parca in [x for x in re.split(r"[,;]", metin or "1-114") if x.strip()]:
+        m = re.match(r"^\s*([^-–]+?)\s*[-–]\s*([^-–]+?)\s*$", parca)
+        if m and _sade_ad(parca) not in adlar:
+            a, b = tek(m[1]), tek(m[2]); sonuc += range(min(a, b), max(a, b) + 1)
+        else: sonuc.append(tek(parca))
+    return list(dict.fromkeys(sonuc))
