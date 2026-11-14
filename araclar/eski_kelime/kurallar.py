@@ -64,7 +64,7 @@ N('ilişki', 'münasebet')
 N('bilgi', 'ilim', dusen='ilm', haric={'bilgin','bilginiz','bilgisizce','bilgisizlikleri'})
 N('yasa', 'kanun', haric={'yasamızda'}, kosul=None)
 KOK[-1] = (KOK[-1][0], KOK[-1][1], KOK[-1][2], None)  # yasak* ayrı tutulur
-N('barış', 'sulh', unlu='a', haric={'barışmak'})
+N('barış', 'sulh', unlu='u', haric={'barışmak'})
 N('kuşku', 'şüphe')
 N('ülke', 'memleket')
 N('çaba', 'gayret', haric={'çabaladığını','çabaladıkça','çabalamaktasın'})

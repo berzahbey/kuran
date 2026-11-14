@@ -91,6 +91,7 @@ def osm_eksikleri_tamamla():
 OZEL_KLASOR = os.path.join(os.path.dirname(os.path.abspath(V.DB_YOL)), "ozel")
 c.execute("CREATE TABLE IF NOT EXISTS ozel_sayfa(id TEXT, s INT, a INT, sayfa INT, PRIMARY KEY(id,s,a))")
 c.execute("CREATE TABLE IF NOT EXISTS ozel_meal(id TEXT PRIMARY KEY, pdf TEXT, ozet TEXT)")
+c.execute("CREATE TABLE IF NOT EXISTS meal_dipnot(id TEXT, s INT, a INT, dipnotlar TEXT, PRIMARY KEY(id,s,a))")
 
 DEPO_MEALLER = os.path.join(BURASI, "..", "mealler")
 
@@ -106,12 +107,13 @@ def ozel_yukle():
         d = json.loads(ham); mid = d["id"]
         if c.execute("SELECT 1 FROM ozel_meal WHERE id=? AND ozet=?", (mid, ozet)).fetchone(): continue
         with V._kilit:
-            for tablo in ("meal", "meal_sure", "ozel_sayfa"): c.execute(f"DELETE FROM {tablo} WHERE id=?", (mid,))
+            for tablo in ("meal", "meal_sure", "ozel_sayfa", "meal_dipnot"): c.execute(f"DELETE FROM {tablo} WHERE id=?", (mid,))
             c.execute("INSERT OR REPLACE INTO meal_kaynak VALUES(?,?,?,?)", (mid, d.get("dil", "Ottoman"), d.get("yazar", mid), d.get("yon", "rtl")))
             for s, ayetler in d["ayetler"].items():
                 for a, x in ayetler.items():
                     if x.get("metin"): c.execute("INSERT OR REPLACE INTO meal VALUES(?,?,?,?)", (mid, int(s), int(a), x["metin"]))
                     if x.get("sayfa"): c.execute("INSERT OR REPLACE INTO ozel_sayfa VALUES(?,?,?,?)", (mid, int(s), int(a), int(x["sayfa"])))
+                    if x.get("dipnotlar"): c.execute("INSERT OR REPLACE INTO meal_dipnot VALUES(?,?,?,?)", (mid, int(s), int(a), json.dumps(x["dipnotlar"], ensure_ascii=False)))
             c.executemany("INSERT OR REPLACE INTO meal_sure VALUES(?,?)", [(mid, s) for s in range(1, 115)])  # internetten aranmasın
             c.execute("INSERT OR REPLACE INTO ozel_meal VALUES(?,?,?)", (mid, d.get("pdf"), ozet)); c.commit()
         print(f"özel meal yüklendi: {mid} ({ad})", flush=True)
@@ -166,6 +168,14 @@ def sureler():
     return [{"s": i + 1, "ad": V.SURE_ADLARI[i], "ad_ar": bilgi.get(i + 1, {}).get("ad_ar", ""), "nuzul": bilgi.get(i + 1, {}).get("nuzul", ""),
              "ayet": V.AYET_SAYILARI[i], "sira": V.NUZUL_SIRASI[i], "not": notsay.get(i + 1, 0), "yalin": yalin.get(i + 1, 0)} for i in range(114)]
 
+def temel_dipnot(s, a=None):
+    """Temel mealin (ve Osmanlıcasının) dipnotları: {a: (dipnotlar_json, dipnotlar_osm_json)}"""
+    q = "SELECT id, a, dipnotlar FROM meal_dipnot WHERE id IN (?,?) AND s=?" + (" AND a=?" if a else "")
+    d = {}
+    for r in satirlar(q, TEMEL_MEAL, TEMEL_MEAL + "-osm", s, *([a] if a else [])):
+        x = d.setdefault(r["a"], ["[]", "[]"]); x[0 if r["id"] == TEMEL_MEAL else 1] = r["dipnotlar"]
+    return d
+
 @app.get("/api/sure/{s}")
 def sure(s: int, meal: str = ""):
     """Okuma görünümü: Arapça + yalın meal (ana metin). meal verilirse karşılaştırma meali de eklenir."""
@@ -176,9 +186,10 @@ def sure(s: int, meal: str = ""):
     yl = {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum, metin_osm, dipnotlar_osm FROM yalin_meal WHERE s=?", s)}
     tm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s)}
     tm_osm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL + "-osm", s)}
+    tdn = temel_dipnot(s)
     for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
         if a not in yl:
-            if a in tm: yl[a] = {"metin": tm[a], "dipnotlar": "[]", "durum": "temel", "metin_osm": tm_osm.get(a), "dipnotlar_osm": "[]"}
+            if a in tm: yl[a] = {"metin": tm[a], "dipnotlar": tdn.get(a, ["[]"])[0], "durum": "temel", "metin_osm": tm_osm.get(a), "dipnotlar_osm": tdn.get(a, ["[]", "[]"])[1]}
             elif a - 1 in tm or (a - 1 in yl and yl[a - 1].get("durum") in ("temel", "birlesik")):
                 yl[a] = {"metin": "", "dipnotlar": "[]", "durum": "birlesik"}
     ns = {r["a"]: r["n"] for r in satirlar("SELECT a, count(*) n FROM notlar WHERE s=? GROUP BY a", s)}
@@ -211,7 +222,7 @@ def ayet(s: int, a: int):
     return {"s": s, "a": a, "sure": V.SURE_ADLARI[s - 1], "arapca": hafs["metin"] if hafs else "", "kiraat": kiraat,
             "kelimeler": list(kelimeler.values()),
             "yalin": tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a) or
-                     ({"metin": r["metin"], "dipnotlar": "[]", "durum": "temel", "metin_osm": (tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL + "-osm", s, a) or {}).get("metin"), "dipnotlar_osm": "[]"}
+                     ({"metin": r["metin"], "dipnotlar": temel_dipnot(s, a).get(a, ["[]"])[0], "durum": "temel", "metin_osm": (tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL + "-osm", s, a) or {}).get("metin"), "dipnotlar_osm": temel_dipnot(s, a).get(a, ["[]", "[]"])[1]}
                       if (r := tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL, s, a)) else None),
             "notlar": satirlar("SELECT * FROM notlar WHERE s=? AND a=? ORDER BY id DESC", s, a)}
 
@@ -385,8 +396,9 @@ def kitap_indir(sureler: str = "", sadece_onayli: bool = False, arapca: bool = F
         yl = {r["a"]: r for r in satirlar("SELECT * FROM yalin_meal WHERE s=?" + (" AND durum='onayli'" if sadece_onayli else ""), s)}
         if temel and not sadece_onayli:
             osm_t = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL + "-osm", s)}
+            tdn = temel_dipnot(s)
             for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s):
-                yl.setdefault(r["a"], {"metin": r["metin"], "dipnotlar": "[]", "metin_osm": osm_t.get(r["a"]), "dipnotlar_osm": "[]"})
+                yl.setdefault(r["a"], {"metin": r["metin"], "dipnotlar": tdn.get(r["a"], ["[]"])[0], "metin_osm": osm_t.get(r["a"]), "dipnotlar_osm": tdn.get(r["a"], ["[]", "[]"])[1]})
         if not yl: continue
         ayetler, dipnot, no = [], {}, 0
         for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
