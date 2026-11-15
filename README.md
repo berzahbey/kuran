@@ -11,7 +11,7 @@ Uygulama açılınca okunan metin **en yalın Türkçe meal**dir. Uzun açıklam
 Başlıktaki **Türkçe ⇄ عثمانلیجه** düğmesi ana meali Osmanlıcaya çevirir (dipnotlar dahil). Osmanlıca metin Zahir'in **osmanlica-cevirici** servisinden gelir (Hayrat imlâsı):
 - Değişmemiş ayetler: `mealler/zahir_osm.json` (mealin tamamı çeviriciden toplu geçirildi).
 - Onaylanan/düzenlenen ayetler: uygulama Türkçe metni kendiliğinden çeviriciye gönderir (`OSM_CEVIRICI_URL`, varsayılan `http://host.docker.internal:8089`) ve sonucu saklar.
-- Çeviricinin hataları denetlenip düzeltilir; düzeltilmiş Osmanlıca `onayli/sure_XXX.json` içinde `meal_osm` / `dipnotlar_osm` olarak durur (ör. Kalem).
+- Çeviricinin hataları denetlenip düzeltilir; düzeltilmiş Osmanlıca doğrudan `mealler/zahir_osm.json` içindedir.
 E-Kitap'ta "Osmanlıca" seçilirse kitap Osmanlıca basılır (Amiri fontu gömülü).
 
 ## Bir ayete tıklayınca: çalışma paneli
@@ -47,8 +47,7 @@ Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemi
 
 ## Meal
 Uygulamanın meali Zahir'in mealidir (`mealler/zahir.json`, Osmanlıcası `mealler/zahir_osm.json`). Yapay zekâ meal yazmaz.
-- **İnceleme:** Sure başlığındaki **inceleme dosyası ⇩** ile surenin JSON'unu indirin; düzeltilmiş dosya `onayli/sure_XXX.json` olarak depoya eklenir.
-- **Onay:** Uygulama güncellenince `onayli/` klasöründeki dosyaları kendiliğinden yükler. Elle yüklemek için: **Kaynaklar → Meal dosyası → içe aktar**.
+Düzeltmeler doğrudan bu iki dosyada yapılır; uygulama güncellenince kendiliğinden yüklenir.
 
 ## Yapay zekâ (isteğe bağlı)
 Yalnız çeviri için kullanılır (ör. nüzul rivayetlerinin Türkçesi). `docker-compose.yml` içinde `YZ_ANAHTAR`'a ücretsiz bir anahtar girin (ör. https://aistudio.google.com → *Get API key*).
@@ -66,5 +65,4 @@ Mealler ve modern tefsirlerin bir kısmı telif hakkına tabidir; uygulama kişi
 
 ## Depo yapısı
 - `app/`: uygulama (FastAPI + SQLite + web arayüzü), `kur.py` veri kurulumu, `kitap.py` EPUB, `yz.py` yapay zekâ sağlayıcıları
-- `onayli/`: Claude ile incelenip onaylanmış yalın mealler (`sure_068.json` …); uygulama kendiliğinden yükler
 - `araclar/`: komut satırı araçları

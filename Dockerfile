@@ -3,7 +3,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN pip install --no-cache-dir fastapi==0.115.* uvicorn==0.32.* pillow==11.*
 WORKDIR /uygulama
 COPY app/ app/
-COPY onayli/ onayli/
 COPY mealler/ mealler/
 ENV KURAN_DB=/veri/kuran.db PYTHONUNBUFFERED=1
 VOLUME /veri

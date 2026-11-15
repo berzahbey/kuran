@@ -32,7 +32,10 @@ def ilk_kurulum():
             with V._kilit:
                 c.executemany("INSERT OR REPLACE INTO sure_bilgi VALUES(?,?,?)",
                               [(x["chapter"], x["arabicname"], x["revelation"]) for x in json.loads(t)["chapters"]]); c.commit()
-    onayli_yukle(); ozel_yukle(); osm_eksikleri_tamamla()
+    if not c.execute("SELECT 1 FROM durum WHERE asama='yalin_kaldir'").fetchone():   # bir kerelik: eski taslak/onaylı kayıtlar silinir; meal yalnız Zahir'in meali
+        with V._kilit:
+            c.execute("DELETE FROM yalin_meal"); c.execute("INSERT OR REPLACE INTO durum(asama, bilgi) VALUES('yalin_kaldir','')"); c.commit()
+    ozel_yukle(); osm_eksikleri_tamamla()
     # tüm külliyat henüz inmediyse arka planda indirmeye başla
     if os.environ.get("KURAN_OTOMATIK_INDIR", "1") == "1" and not c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone():
         kur_baslat()
@@ -167,8 +170,7 @@ def ayet_resmi(mid: str, s: int, a: int):
         out.save(hedef, optimize=True)
     return FileResponse(hedef, media_type="image/png", headers={"Cache-Control": "max-age=604800"})
 
-# ---------------- Onaylı meal dosyaları (GitHub'daki onayli/ klasörü) ----------------
-ONAYLI_KLASOR = os.path.join(BURASI, "..", "onayli")
+# ---------------- Meal dosyası içe aktarma ----------------
 c.execute("CREATE TABLE IF NOT EXISTS yuklenen_dosya(ad TEXT, ozet TEXT, tarih TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(ad, ozet))")
 
 def meal_json_yukle(d, durum_varsayilan="onayli"):
@@ -183,17 +185,6 @@ def meal_json_yukle(d, durum_varsayilan="onayli"):
             n += 1
         c.commit()
     return n
-
-def onayli_yukle():
-    """onayli/ klasöründeki her dosya (içeriği değiştikçe) bir kez yüklenir; böylece GitHub'dan gelen düzeltmeler uygulamaya geçer."""
-    if not os.path.isdir(ONAYLI_KLASOR): return
-    for ad in sorted(os.listdir(ONAYLI_KLASOR)):
-        if not ad.endswith(".json"): continue
-        ham = open(os.path.join(ONAYLI_KLASOR, ad), "rb").read(); ozet = hashlib.sha1(ham).hexdigest()
-        if c.execute("SELECT 1 FROM yuklenen_dosya WHERE ad=? AND ozet=?", (ad, ozet)).fetchone(): continue
-        n = meal_json_yukle(json.loads(ham))
-        with V._kilit: c.execute("INSERT INTO yuklenen_dosya(ad,ozet) VALUES(?,?)", (ad, ozet)); c.commit()
-        print(f"onaylı meal yüklendi: {ad} ({n} ayet)", flush=True)
 
 # ---------------- Sureler / ayetler ----------------
 @app.get("/api/sureler")
@@ -573,27 +564,6 @@ def kur_baslat():
     _kurulum["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "kur.py")],
                                          stdout=open(_kurulum["log"], "w"), stderr=subprocess.STDOUT)
     return {"durum": "başladı"}
-
-_uretim = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "uretim.log")}
-
-@app.post("/api/osmanlica-tamamla")
-def osmanlica_tamamla(): return {"cevrilen": osm_eksikleri_tamamla()}
-
-@app.get("/api/uretim")
-def uretim_durum():
-    calisiyor = _uretim["surec"] is not None and _uretim["surec"].poll() is None
-    log = "".join(open(_uretim["log"], encoding="utf-8").readlines()[-12:]) if os.path.exists(_uretim["log"]) else ""
-    return {"hazir": c.execute("SELECT count(*) FROM yalin_meal").fetchone()[0],
-            "onayli": c.execute("SELECT count(*) FROM yalin_meal WHERE durum='onayli'").fetchone()[0],
-            "taslak": c.execute("SELECT count(*) FROM yalin_meal WHERE durum!='onayli'").fetchone()[0],
-            "toplam": 6236, "calisiyor": calisiyor, "log": log, "yapay_zeka": yz.hazir()}
-
-@app.delete("/api/yalin/taslaklar")
-def taslaklari_sil():
-    """Onaylı olmayan (yapay zekâ ya da elle) taslak mealleri siler; o ayetlerde temel meal (Zahir'in meali) görünür."""
-    with V._kilit:
-        n = c.execute("DELETE FROM yalin_meal WHERE durum!='onayli'").rowcount; c.commit()
-    return {"silinen": n}
 
 # Yapay zekâyla meal üretimi kaldırıldı: meal Zahir'in mealidir; yapay zekâ yalnız çeviri (nüzul vb.) için kullanılır.
 

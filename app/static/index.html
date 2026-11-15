@@ -183,7 +183,7 @@ async function sureAc(s,a=null){
   const d=await api(`/api/sure/${s}?meal=${D.meal}`); const b=D.sureler[s-1]; const hazir=d.ayetler.filter(x=>x.yalin_durum==="onayli"||x.yalin_durum==="taslak").length; const onayli=d.ayetler.filter(x=>x.yalin_durum==="onayli").length;
   const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
   $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${esc(d.ad)} Sûresi</h2>
-   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet${onayli===b.ayet?" · ✓ onaylı meal":(onayli?` · ${onayli}/${b.ayet} ayet onaylı`:"")} · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a> · <a href="/api/yalin/disa-aktar/${s}" title="Bu surenin mealini inceleme/düzeltme için JSON olarak indir">inceleme dosyası ⇩</a></span></div>
+   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a></span></div>
    ${s!==1&&s!==9?`<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr${D.dil==="osm"?" osm-b":""}">${D.dil==="osm"?"رحمان و رحیم اولان اللّهڭ اسمیله":"Rahmân ve Rahîm olan Allah'ın ismiyle"}</div></div><div class="besmele-sade${D.dil==="osm"?" osm-b":""}">${D.dil==="osm"?"رحمان و رحیم اولان اللّهڭ اسمیله":"Rahmân ve Rahîm olan Allah'ın ismiyle"}</div>`:""}`+
    d.ayetler.map(x=>`<div class="ayet" id="ay${x.a}" onclick="ayetSec(${s},${x.a})">
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
@@ -205,7 +205,7 @@ async function ayetSec(s,a){
   const ym=D.ayet.yalin;
   panelCiz(`<div class="baslik"><b>${esc(D.ayet.sure)} ${s}:${a}</b><span><button class="btn ikincil" title="Önceki ayet (↑)" onclick="ayetSec(${s},${Math.max(1,a-1)})">‹</button> <button class="btn ikincil" title="Sonraki ayet (↓)" onclick="ayetSec(${s},${Math.min(D.sureler[s-1].ayet,a+1)})">›</button> <button class="btn ikincil" title="Kapat (Esc)" onclick="panelKapat()">×</button></span></div>
     <div class="ar">${esc(D.ayet.arapca)}</div>
-    <div class="panel-meal">${ym&&D.dil==="osm"&&ym.metin_osm?`<div class="osm">${dipnotluMetin(ym.metin_osm,JSON.parse(ym.dipnotlar_osm||"[]"))}</div>`:""}${ym?dipnotluMetin(ym.metin,JSON.parse(ym.dipnotlar||"[]")):'<span class="kucuk">Yalın meal henüz yok.</span>'} <a href="#" class="duzenle" title="Yalın meali düzenle" onclick="sekme('yalin');return false">✎</a></div>
+    <div class="panel-meal">${ym&&D.dil==="osm"&&ym.metin_osm?`<div class="osm">${dipnotluMetin(ym.metin_osm,JSON.parse(ym.dipnotlar_osm||"[]"))}</div>`:""}${ym?dipnotluMetin(ym.metin,JSON.parse(ym.dipnotlar||"[]")):'<span class="kucuk">Yalın meal henüz yok.</span>'}</div>
     <div class="sekmeler">${sek.map(([k,t])=>`<button data-s="${k}" class="${D.sekme===k?"aktif":""}" onclick="sekme('${k}')">${t}</button>`).join("")}</div>`);
   sekme(D.sekme);
 }
@@ -380,14 +380,12 @@ async function notlarAc(q=""){const n=await api("/api/notlar?q="+encodeURICompon
    ${n.map(x=>`<div class="not" style="cursor:pointer" onclick="modalKapat();sureAc(${x.s},${x.a||"null"});${x.a?"":`setTimeout(()=>ayetSec(${x.s},0),300)`}"><b>${esc(x.sure)} ${x.s}${x.a?":"+x.a:" (genel)"}</b>${x.etiket?' <span class="rozet">#'+esc(x.etiket)+"</span>":""}<div>${esc(x.metin).replace(/\n/g,"<br>")}</div></div>`).join("")}`);
   $("#notAra").onchange=e=>notlarAc(e.target.value);}
 async function kitapAc(){
-  modalAc(`<h2 style="margin-top:0">E-Kitap (EPUB)</h2><p>Yalın Türkçe meal; dipnotlar numaraya dokununca açılır.</p>
+  modalAc(`<h2 style="margin-top:0">E-Kitap (EPUB)</h2><p>Zahir'in meali; dipnotlar numaraya dokununca açılır.</p>
    <p><input class="tam" id="kSureler" placeholder="Sureler: boş = tüm Kur'an · 68 · ihlas · 78-114 · felak, nas" style="max-width:420px"></p>
    <p><label><input type="radio" name="kDil" value="tr" checked> Türkçe</label> &nbsp; <label><input type="radio" name="kDil" value="osm"> Osmanlıca </label></p>
    <label><input type="checkbox" id="kArapca"> Arapça aslını da ekle</label><br>
-   <label><input type="checkbox" id="kTemel" checked> Yalın meali henüz olmayan ayetlerde Zahir'in mealini kullan</label><br>
-   <label><input type="checkbox" id="kOnay"> Sadece onaylı ayetler</label>
    <p><button class="btn" onclick="kitapIndir()">EPUB indir</button> <span class="kucuk" id="kDurum"></span></p>`)}
-function kitapIndir(){$("#kDurum").textContent="Hazırlanıyor… (tüm Kur'an birkaç saniye sürer)";location.href=`/api/kitap.epub?sureler=${encodeURIComponent($("#kSureler").value.trim())}&sadece_onayli=${$("#kOnay").checked}&arapca=${$("#kArapca").checked}&temel=${$("#kTemel").checked}&dil=${document.querySelector("input[name=kDil]:checked").value}`}
+function kitapIndir(){$("#kDurum").textContent="Hazırlanıyor… (tüm Kur'an birkaç saniye sürer)";location.href=`/api/kitap.epub?sureler=${encodeURIComponent($("#kSureler").value.trim())}&arapca=${$("#kArapca").checked}&dil=${document.querySelector("input[name=kDil]:checked").value}`}
 async function kaynakAc(yenile=false){const d=await api("/api/durum");const y=(a,b)=>b?Math.round(a/b*100)+"%":"-";
   const govde=`<p class="kucuk">Uygulama her şeyi kendi veritabanında tutar. Yerelde olmayan bir şey açılırsa internetten çekilip kaydedilir. "Tümünü indir" ile bütün külliyat bir kerede sunucuya alınır (internetsiz çalışır).</p>
    <div class="istat"><div><b>${d.ayet_metni.toLocaleString()}</b>Arapça ayet metni (Hafs + 7 kıraat)</div><div><b>${d.kelime.toLocaleString()}</b>kelime/morfoloji parçası</div>
@@ -397,23 +395,9 @@ async function kaynakAc(yenile=false){const d=await api("/api/durum");const y=(a
    <button class="btn" ${d.kurulum_calisiyor?"disabled":""} onclick="api('/api/kur',{method:'POST'}).then(()=>setTimeout(()=>kaynakAc(true),1500))">${d.kurulum_calisiyor?"İndiriliyor…":"Tüm kaynakları indir / güncelle"}</button>
    ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}`;
   if(yenile){const k=$("#kaynakGovde");if(k)k.innerHTML=govde;}
-  else{modalAc(`<h2 style="margin-top:0">Kaynaklar</h2><div id="kaynakGovde">${govde}</div><h3 style="margin-top:22px">Meal dosyası</h3><div id="uretimKutu" class="kucuk">…</div>`);uretimCiz();}
+  else{modalAc(`<h2 style="margin-top:0">Kaynaklar</h2><div id="kaynakGovde">${govde}</div>`);}
   if(d.kurulum_calisiyor)setTimeout(()=>{if($("#modalArka").style.display==="flex"&&$("#kaynakGovde"))kaynakAc(true)},4000)}
 
-async function uretimCiz(){const u=await api("/api/uretim");const k=$("#uretimKutu");if(!k)return;
-  if(!k.dataset.cizildi){const b=await api("/api/ayarlar");k.dataset.cizildi="1";
-  k.innerHTML=`<p><b id="uDurum"></b></p>
-   <p id="uTaslak"></p>
-   <pre class="log" id="uLog" style="display:none"></pre>
-   <p style="margin-top:14px"><b>Düzeltilmiş meal dosyası içe aktar</b> (inceleme dosyası biçiminde .json): <input type="file" accept=".json" onchange="iceAktar(this)"></p>`;}
-  $("#uDurum").textContent=`Okuma ekranında sizin mealiniz gösteriliyor (${u.onayli} ayet onaylı dosyadan).`;
-  $("#uTaslak").innerHTML=u.taslak?`<span class="not">${u.taslak.toLocaleString()} ayette veritabanında ayrı bir taslak meal var; bu ayetlerde sizin mealinizin yerine o gösteriliyor.</span> <button class="btn ikincil" onclick="if(confirm('Taslak mealler silinsin, bu ayetlerde sizin mealiniz gösterilsin mi?'))api('/api/yalin/taslaklar',{method:'DELETE'}).then(()=>{D.sureler=null;location.reload()})">Taslakları sil</button>`:"";
-  const lg=$("#uLog");lg.style.display=u.log?"block":"none";lg.textContent=u.log;lg.scrollTop=lg.scrollHeight;
-  if(u.calisiyor)setTimeout(()=>{if($("#uretimKutu"))uretimCiz()},5000)}
-
-async function iceAktar(inp){const f=inp.files[0];if(!f)return;try{const d=JSON.parse(await f.text());const r=await api("/api/yalin/ice-aktar",{method:"POST",body:JSON.stringify(d)});
-  alertYok(`${r.ayet} ayet içe aktarıldı.`);D.sureler=await api("/api/sureler");sureListe();if(D.s===d.sure)sureAc(D.s);uretimCiz()}catch(e){alertYok("Hata: "+e.message)}}
-function alertYok(m){const k=$("#uretimKutu");if(k)k.insertAdjacentHTML("afterbegin",`<p class="not">${esc(m)}</p>`)}
 
 function sayfaGoster(mid,n){modalAc(`<h3 style="margin-top:0">Kitabın aslı · sayfa ${n}</h3>
   <p class="kucuk"><a href="#" onclick="sayfaGoster('${mid}',${n-1});return false">‹ önceki</a> · <a href="#" onclick="sayfaGoster('${mid}',${n+1});return false">sonraki ›</a></p>
