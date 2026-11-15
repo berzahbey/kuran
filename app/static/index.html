@@ -126,6 +126,13 @@ aside#panel{overflow:auto;border-left:1px solid var(--cizgi);background:var(--ka
 .oge{border-bottom:1px solid var(--cizgi2);padding:7px 0}
 .oge b{font-size:13px}
 .rtl{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:19px;line-height:1.9}
+#okuyucu{position:fixed;inset:0;z-index:70;background:var(--bg);color:var(--yazi);display:none;flex-direction:column}
+.ok-ust{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--cizgi);background:var(--kart);flex-wrap:wrap}
+.ok-govde{flex:1;overflow:auto;padding:24px var(--kenar,28px) 60px}
+.ok-sutun{max-width:var(--okuma-gen,720px);margin:0 auto}
+.ok-meal{font-family:var(--tr-font);font-size:calc(17px*var(--tr-boy));color:var(--tr-renk);line-height:var(--satir,1.7)}
+.ok-metin{white-space:pre-wrap;font-family:var(--tr-font);line-height:var(--satir,1.7);text-align:var(--hiza,left)}
+.ok-metin.rtl{font-family:var(--ar-font);direction:rtl;text-align:right;line-height:2.1}
 .tefsir-metin{white-space:pre-wrap;max-height:60vh;overflow:auto;background:var(--nav);border:1px solid var(--cizgi);border-radius:6px;padding:10px;margin-top:6px}
 .cipler{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .cip{border:1px solid var(--cizgi);background:var(--kart);color:var(--yazi);border-radius:12px;padding:2px 9px;font-size:12px;cursor:pointer}
@@ -175,6 +182,7 @@ const $=s=>document.querySelector(s);
 const esc=t=>(t??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const arRakam=n=>String(n).replace(/\d/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);
 const AR=/[؀-ۿ]/;
+const arMi=t=>{const a=(t.match(/[\u0600-\u06FF]/g)||[]).length,l=(t.match(/[A-Za-zÀ-ɏ]/g)||[]).length;return a>l};
 async function api(u,o={}){const r=await fetch(u,{headers:{"Content-Type":"application/json"},...o});if(!r.ok){let m=r.statusText;try{m=(await r.json()).detail}catch(e){}throw new Error(m)}return r.headers.get("content-type")?.includes("json")?r.json():r.text()}
 function md(t){ // basit markdown
   t=esc(t);t=t.replace(/^### (.*)$/gm,"<h3>$1</h3>").replace(/^## (.*)$/gm,"<h2>$1</h2>").replace(/^# (.*)$/gm,"<h2>$1</h2>")
@@ -350,9 +358,27 @@ async function tefsirSekme(){
    document.querySelectorAll(".cip[data-l]").forEach(c=>c.onclick=()=>{tefDil=c.dataset.l;ciz()});};
   ciz();
 }
-async function tefsirAc(slug,el){const k=el.nextElementSibling; if(k.innerHTML){k.innerHTML="";return}
-  k.innerHTML='<div class="yukleniyor">…</div>'; const d=await api(`/api/tefsir/${slug}/${D.s}/${D.a}`);
-  k.innerHTML=`<div class="tefsir-metin ${AR.test(d.metin)?"rtl":""}">${esc(d.metin)}</div><button class="btn ikincil" style="margin-top:4px" onclick="alintiNot('${esc(d.ad).replace(/'/g,"\\'")}',this)">Bu tefsirden not al</button>`;}
+let TO=null;   // tefsir okuyucu: {slug,s,a}
+async function tefsirAc(slug,el){TO={slug,s:D.s,a:D.a};tefsirOkuyucu()}
+async function tefsirOkuyucu(){
+  let o=$("#okuyucu");if(!o){o=document.createElement("div");o.id="okuyucu";document.body.appendChild(o)}
+  o.style.display="flex";o.innerHTML='<div class="yukleniyor" style="margin:auto">…</div>';
+  const {slug,s,a}=TO;const n=D.sureler[s-1].ayet;
+  const [d,ay]=await Promise.all([api(`/api/tefsir/${slug}/${s}/${a}`),api(`/api/ayet/${s}/${a}?ana=${anaMeal()}`)]);
+  const ar=arMi(d.metin), boy=G.tefsir_boy||100;
+  o.innerHTML=`<div class="ok-ust"><b>${esc(d.ad)}</b><span class="kucuk">${esc(sureAdKisa(s))} ${s}:${a}</span><span style="flex:1"></span>
+    <button class="btn ikincil" ${a<=1?"disabled":""} onclick="TO.a--;tefsirOkuyucu()" title="Önceki ayet (←)">‹</button><button class="btn ikincil" ${a>=n?"disabled":""} onclick="TO.a++;tefsirOkuyucu()" title="Sonraki ayet (→)">›</button>
+    <button class="btn ikincil" onclick="G.tefsir_boy=Math.max(70,(G.tefsir_boy||100)-10);gorunumUygula();tefsirOkuyucu()" title="Küçült">A−</button><button class="btn ikincil" onclick="G.tefsir_boy=Math.min(220,(G.tefsir_boy||100)+10);gorunumUygula();tefsirOkuyucu()" title="Büyüt">A+</button>
+    <button class="btn ikincil" onclick="const q=[TO.s,TO.a];tefsirKapat();ayetSec(q[0],q[1]).then(()=>alintiNot('${esc(d.ad).replace(/'/g,"\\'")}'))">✎ Not al</button><button class="btn" onclick="tefsirKapat()">✕</button></div>
+   <div class="ok-govde"><div class="ok-sutun">
+    <div class="ar" style="font-family:var(--ar-font);font-size:calc(26px*var(--ar-boy));direction:rtl;text-align:right;line-height:2">${esc(ay.arapca)}</div>
+    ${ay.yalin?`<p class="ok-meal">${dipnotluMetin(ay.yalin.metin,JSON.parse(ay.yalin.dipnotlar||"[]"))}</p>`:""}<hr>
+    <div class="ok-metin ${ar?"rtl":""}" style="font-size:${(ar?23:19)*boy/100}px">${esc(d.metin)}</div></div></div>`;
+  o.querySelector(".ok-govde").scrollTop=0}
+function tefsirKapat(){const o=$("#okuyucu");if(o)o.style.display="none";TO=null}
+document.addEventListener("keydown",e=>{if(!TO||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==="Escape"){e.stopImmediatePropagation();tefsirKapat()}
+  else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){e.stopImmediatePropagation();if(e.key==="ArrowRight"&&TO.a<D.sureler[TO.s-1].ayet)TO.a++;else if(e.key==="ArrowLeft"&&TO.a>1)TO.a--;else return;tefsirOkuyucu()}},true);
 
 function nuzulKaynaklar(n){
   return `${n.turkce.map(r=>`<div class="oge"><b>${esc(r.ad)}</b>${r.parcalar.map(p=>`<div>${esc(p)}</div>`).join("")}</div>`).join("")}
