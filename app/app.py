@@ -583,17 +583,17 @@ def uretim_durum():
     log = "".join(open(_uretim["log"], encoding="utf-8").readlines()[-12:]) if os.path.exists(_uretim["log"]) else ""
     return {"hazir": c.execute("SELECT count(*) FROM yalin_meal").fetchone()[0],
             "onayli": c.execute("SELECT count(*) FROM yalin_meal WHERE durum='onayli'").fetchone()[0],
+            "taslak": c.execute("SELECT count(*) FROM yalin_meal WHERE durum!='onayli'").fetchone()[0],
             "toplam": 6236, "calisiyor": calisiyor, "log": log, "yapay_zeka": yz.hazir()}
 
-@app.post("/api/uretim")
-def uretim_baslat(d: dict = Body(default={})):
-    if not yz.hazir(): raise HTTPException(400, "Yapay zekâ tanımlı değil (YZ_ANAHTAR).")
-    if _uretim["surec"] is not None and _uretim["surec"].poll() is None: return {"durum": "zaten çalışıyor"}
-    try: secim = V.sure_listesi_coz(d.get("sureler") or "1-114")
-    except ValueError as e: raise HTTPException(400, f"Sure listesi anlaşılamadı: {e}")
-    _uretim["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "uret.py"), "--sureler", d.get("sureler") or "1-114", "--paket", os.environ.get("URETIM_PAKET", "tam")],
-                                        stdout=open(_uretim["log"], "a"), stderr=subprocess.STDOUT)
-    return {"durum": "başladı"}
+@app.delete("/api/yalin/taslaklar")
+def taslaklari_sil():
+    """Onaylı olmayan (yapay zekâ ya da elle) taslak mealleri siler; o ayetlerde temel meal (Zahir'in meali) görünür."""
+    with V._kilit:
+        n = c.execute("DELETE FROM yalin_meal WHERE durum!='onayli'").rowcount; c.commit()
+    return {"silinen": n}
+
+# Yapay zekâyla meal üretimi kaldırıldı: meal Zahir'in mealidir; yapay zekâ yalnız çeviri (nüzul vb.) için kullanılır.
 
 app.mount("/static", StaticFiles(directory=os.path.join(BURASI, "static")), name="static")
 

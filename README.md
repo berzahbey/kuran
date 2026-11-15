@@ -44,13 +44,14 @@ Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemi
 - **Osmanlıca meal (OCR taslağı)** (`mealler/osmanlica_ocr.json`): taranmış 605 sayfalık PDF'ten OCR ile çıkarıldı; ayetlerin ~%83'ü ayrı, kalanı önceki ayetle birlikte. Her ayette "kitapta s. N" ile kitabın aslı açılır; bunun için PDF'i sunucuda `veri/ozel/Kuran_Osmanlica_Meal.pdf` olarak koyun.
 - Yeni meal eklemek: aynı biçimde bir JSON'u `mealler/` (depo) veya `veri/ozel/` (sunucu) klasörüne koymak yeterli.
 
-## Yalın meal: üretim ve inceleme
-1. **Taslak (ücretsiz yapay zekâ):** `docker-compose.yml` içine ücretsiz bir anahtar girin (ör. https://aistudio.google.com → *Get API key*), uygulamayı yeniden başlatın, **Kaynaklar → Yalın meali üret**. Her ayet için kök/lügat, garîb eserleri, 9 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meal okunur; onaylı Kalem 1-7 üslubuyla taslak yazılır. Günlük ücretsiz kota dolarsa bekler, ertesi gün kendiliğinden devam eder. Onaylı veya elle düzeltilmiş ayetlere dokunmaz.
-   Desteklenenler: Gemini (varsayılan), OpenAI uyumlu her uç nokta (OpenRouter, Groq, Cerebras, yerel Ollama), Anthropic.
-2. **İnceleme:** Sure başlığındaki **inceleme dosyası ⇩** ile surenin JSON'unu indirin, Claude'a verin. Claude düzeltir; düzeltilmiş dosya `onayli/sure_XXX.json` olarak bu depoya eklenir.
-3. **Onay:** Uygulama güncellenince `onayli/` klasöründeki yeni/değişen dosyaları kendiliğinden yükler. Elle yüklemek için: **Kaynaklar → Düzeltilmiş meal dosyası içe aktar**.
+## Meal
+Uygulamanın meali Zahir'in mealidir (`mealler/zahir.json`, Osmanlıcası `mealler/zahir_osm.json`). Yapay zekâ meal yazmaz.
+- **İnceleme:** Sure başlığındaki **inceleme dosyası ⇩** ile surenin JSON'unu indirin; düzeltilmiş dosya `onayli/sure_XXX.json` olarak depoya eklenir.
+- **Onay:** Uygulama güncellenince `onayli/` klasöründeki dosyaları kendiliğinden yükler. Elle yüklemek için: **Kaynaklar → Meal dosyası → içe aktar**.
 
-Komut satırı: `python app/uret.py --sureler 78-114` · paket boyutu `--paket orta|kucuk` · denemek için `--kuru`.
+## Yapay zekâ (isteğe bağlı)
+Yalnız çeviri için kullanılır (ör. nüzul rivayetlerinin Türkçesi). `docker-compose.yml` içinde `YZ_ANAHTAR`'a ücretsiz bir anahtar girin (ör. https://aistudio.google.com → *Get API key*).
+Desteklenenler: Gemini (varsayılan), OpenAI uyumlu her uç nokta (OpenRouter, Groq, Cerebras, yerel Ollama), Anthropic.
 
 ## Veri kaynakları
 - Arapça metin, 8 kıraat, 492 meal: github.com/fawazahmed0/quran-api
@@ -63,6 +64,6 @@ Komut satırı: `python app/uret.py --sureler 78-114` · paket boyutu `--paket o
 Mealler ve modern tefsirlerin bir kısmı telif hakkına tabidir; uygulama kişisel çalışma içindir.
 
 ## Depo yapısı
-- `app/`: uygulama (FastAPI + SQLite + web arayüzü), `kur.py` veri kurulumu, `uret.py` yalın meal üretimi, `kitap.py` EPUB, `yz.py` yapay zekâ sağlayıcıları
+- `app/`: uygulama (FastAPI + SQLite + web arayüzü), `kur.py` veri kurulumu, `kitap.py` EPUB, `yz.py` yapay zekâ sağlayıcıları
 - `onayli/`: Claude ile incelenip onaylanmış yalın mealler (`sure_068.json` …); uygulama kendiliğinden yükler
 - `araclar/`: komut satırı araçları

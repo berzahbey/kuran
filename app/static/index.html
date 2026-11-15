@@ -378,24 +378,22 @@ async function kaynakAc(yenile=false){const d=await api("/api/durum");const y=(a
    <div class="istat"><div><b>${d.ayet_metni.toLocaleString()}</b>Arapça ayet metni (Hafs + 7 kıraat)</div><div><b>${d.kelime.toLocaleString()}</b>kelime/morfoloji parçası</div>
    <div><b>${d.lane_kok.toLocaleString()}</b>Lane lügat maddesi</div><div><b>${d.meal_kaynak}</b>meal · ${y(d.meal_sure,d.meal_sure_hedef)} indirildi</div>
    <div><b>${d.tefsir_kaynak}</b>tefsir · ${y(d.tefsir_sure,d.tefsir_sure_hedef)} indirildi</div><div><b>${d.hadis.toLocaleString()}</b>hadis metni (ar/tr/en)</div>
-   <div><b>${d.hadis_ayet.toLocaleString()}</b>hadis–ayet bağlantısı</div><div><b>${d.db_mb} MB</b>veritabanı</div><div><b>${d.yapay_zeka?"Açık":"Kapalı"}</b>yapay zekâ (görüş analizi, yalın meal önerisi)</div></div>
+   <div><b>${d.hadis_ayet.toLocaleString()}</b>hadis–ayet bağlantısı</div><div><b>${d.db_mb} MB</b>veritabanı</div><div><b>${d.yapay_zeka?"Açık":"Kapalı"}</b>yapay zekâ (çeviriler, görüş analizi)</div></div>
    <button class="btn" ${d.kurulum_calisiyor?"disabled":""} onclick="api('/api/kur',{method:'POST'}).then(()=>setTimeout(()=>kaynakAc(true),1500))">${d.kurulum_calisiyor?"İndiriliyor…":"Tüm kaynakları indir / güncelle"}</button>
    ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}`;
   if(yenile){const k=$("#kaynakGovde");if(k)k.innerHTML=govde;}
-  else{modalAc(`<h2 style="margin-top:0">Kaynaklar</h2><div id="kaynakGovde">${govde}</div><h3 style="margin-top:22px">Yalın meal üretimi (bir seferlik)</h3><div id="uretimKutu" class="kucuk">…</div>`);uretimCiz();}
+  else{modalAc(`<h2 style="margin-top:0">Kaynaklar</h2><div id="kaynakGovde">${govde}</div><h3 style="margin-top:22px">Meal dosyası</h3><div id="uretimKutu" class="kucuk">…</div>`);uretimCiz();}
   if(d.kurulum_calisiyor)setTimeout(()=>{if($("#modalArka").style.display==="flex"&&$("#kaynakGovde"))kaynakAc(true)},4000)}
 
 async function uretimCiz(){const u=await api("/api/uretim");const k=$("#uretimKutu");if(!k)return;
   if(!k.dataset.cizildi){const b=await api("/api/ayarlar");k.dataset.cizildi="1";
   k.innerHTML=`<p><b id="uDurum"></b></p>
-   <p>Yapay zekâ her ayet için kök/lügat, 9 klasik ve modern tefsir, 13 Türkçe ve 4 İngilizce meali okuyup taslak meali ve gerekli dipnotları yazar.
-   Meali olan ayetlere dokunmaz. Ücretsiz katmanın günlük kotası dolarsa bekler, ertesi gün kendiliğinden devam eder.</p>
-   ${u.yapay_zeka?`<p>Kullanılan: <b>${esc(b.saglayici)} · ${esc(b.model)}</b></p><input class="tam" id="uretSure" placeholder="Sureler: boş = tümü · 112 · ihlas · 78-114 · felak, nas" style="max-width:320px"> <button class="btn" id="uretDugme" onclick="api('/api/uretim',{method:'POST',body:JSON.stringify({sureler:$('#uretSure').value.trim()})}).then(uretimCiz).catch(e=>alertYok(e.message))">Yalın meali üret</button>`:"<p><b>Yapay zekâ tanımlı değil.</b> docker-compose.yml içinde <code>YZ_ANAHTAR</code> (ör. Google AI Studio'dan ücretsiz Gemini anahtarı) girip uygulamayı yeniden başlatınca bu düğme açılır.</p>"}
+   <p id="uTaslak"></p>
    <pre class="log" id="uLog" style="display:none"></pre>
    <p style="margin-top:14px"><b>Düzeltilmiş meal dosyası içe aktar</b> (inceleme dosyası biçiminde .json): <input type="file" accept=".json" onchange="iceAktar(this)"></p>`;}
-  $("#uDurum").textContent=`${u.hazir.toLocaleString()} / ${u.toplam.toLocaleString()} ayetin yalın meali hazır (${u.onayli} onaylı)`;
+  $("#uDurum").textContent=`Okuma ekranında sizin mealiniz gösteriliyor (${u.onayli} ayet onaylı dosyadan).`;
+  $("#uTaslak").innerHTML=u.taslak?`<span class="not">${u.taslak.toLocaleString()} ayette veritabanında ayrı bir taslak meal var; bu ayetlerde sizin mealinizin yerine o gösteriliyor.</span> <button class="btn ikincil" onclick="if(confirm('Taslak mealler silinsin, bu ayetlerde sizin mealiniz gösterilsin mi?'))api('/api/yalin/taslaklar',{method:'DELETE'}).then(()=>{D.sureler=null;location.reload()})">Taslakları sil</button>`:"";
   const lg=$("#uLog");lg.style.display=u.log?"block":"none";lg.textContent=u.log;lg.scrollTop=lg.scrollHeight;
-  const dg=$("#uretDugme");if(dg){dg.disabled=u.calisiyor;dg.textContent=u.calisiyor?"Üretiliyor…":"Yalın meali üret"}
   if(u.calisiyor)setTimeout(()=>{if($("#uretimKutu"))uretimCiz()},5000)}
 
 async function iceAktar(inp){const f=inp.files[0];if(!f)return;try{const d=JSON.parse(await f.text());const r=await api("/api/yalin/ice-aktar",{method:"POST",body:JSON.stringify(d)});
