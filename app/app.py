@@ -270,6 +270,7 @@ def mealler(s: int, a: int, dil: str = ""):
                       + (" AND k.dil=?" if dil else ""), s, a, *([dil] if dil else [])):
         if r["id"].endswith("-la") and r["dil"] != "Turkish": continue  # Latin harf çevriyazı kopyaları
         if r["id"].endswith("-la") and r["dil"] == "Turkish": continue
+        if r["id"] == TEMEL_MEAL: continue  # Zahir'in meali zaten ana metin; listede tekrar gösterilmez
         r["yazar"] = V.YAZAR_ADI.get(r["id"], r["yazar"])
         if r["metin"] == RESIM: r["metin"] = ""; r["resim"] = f"/api/resim/{r['id']}/{s}/{a}.png"
         sp = tek("SELECT sayfa FROM ozel_sayfa WHERE id=? AND s=? AND a=?", r["id"], s, a)
@@ -281,7 +282,7 @@ def mealler(s: int, a: int, dil: str = ""):
 @app.get("/api/meal-kaynaklari")
 def meal_kaynaklari():
     V.meal_kaynaklari_yukle(c)
-    r = satirlar("SELECT * FROM meal_kaynak WHERE id NOT LIKE '%-la' ORDER BY dil, yazar")
+    r = satirlar("SELECT * FROM meal_kaynak WHERE id NOT LIKE '%-la' AND id!=? ORDER BY dil, yazar", TEMEL_MEAL)
     for x in r: x["yazar"] = V.YAZAR_ADI.get(x["id"], x["yazar"])
     return r
 
