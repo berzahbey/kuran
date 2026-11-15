@@ -40,13 +40,13 @@ Sunucuda `docker compose pull && docker compose up -d` (ZimaOS'ta uygulamanın "
 Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemiş bir şey açılırsa o an internetten çekilir ve kaydedilir.
 
 ## Mealler
-- **Zahir'in meali** (`mealler/zahir.json`): ana gövdenin temeli. Onaylı/yeni yalın meal olmayan her ayette okunan metin budur. Parantez içindeki Arapça çeviriyazılar çıkarıldı, Türkçe açıklamalar korundu. Standart numaralamadan ayrıldığı 6 yerde (iki kısa ayetin birlikte çevrildiği yerler) standart numaraya hizalandı.
+- **Türkçe meal** (`mealler/zahir.json`): ana gövdenin temeli. Onaylı/yeni yalın meal olmayan her ayette okunan metin budur. Parantez içindeki Arapça çeviriyazılar çıkarıldı, Türkçe açıklamalar korundu. Standart numaralamadan ayrıldığı 6 yerde (iki kısa ayetin birlikte çevrildiği yerler) standart numaraya hizalandı.
 - **Osmanlıca meal (OCR taslağı)** (`mealler/osmanlica_ocr.json`): taranmış 605 sayfalık PDF'ten OCR ile çıkarıldı; ayetlerin ~%83'ü ayrı, kalanı önceki ayetle birlikte. Her ayette "kitapta s. N" ile kitabın aslı açılır; bunun için PDF'i sunucuda `veri/ozel/Kuran_Osmanlica_Meal.pdf` olarak koyun.
 - Hayrat Osmanlıca meali: ayet resimleri `mealler/osm-ocr/SSS_AAA.webp` olarak depoda; PDF gerekmez.
 - Yeni meal eklemek: aynı biçimde bir JSON'u `mealler/` (depo) veya `veri/ozel/` (sunucu) klasörüne koymak yeterli.
 
 ## Meal
-Uygulamanın meali Zahir'in mealidir (`mealler/zahir.json`, Osmanlıcası `mealler/zahir_osm.json`). Yapay zekâ meal yazmaz.
+Uygulamanın meali bu depodaki Türkçe mealdir (`mealler/zahir.json`, Osmanlıcası `mealler/zahir_osm.json`). Yapay zekâ meal yazmaz.
 Düzeltmeler doğrudan bu iki dosyada yapılır; uygulama güncellenince kendiliğinden yüklenir.
 
 ## Yapay zekâ (isteğe bağlı)

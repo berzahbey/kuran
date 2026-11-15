@@ -120,6 +120,7 @@ def main():
         for kol in V.HADIS_KOLLAR:
             for dil in ("ara", "tur", "eng"):
                 log("hadis:", dil, kol, V.hadis_kol_yukle(c, kol, dil))
+        for kol in V.HADIS_EK: log("hadis (ek):", kol, V.hadis_json_yukle(c, kol))
         durum(c, "hadis", "tamam")
     if "eslestir" in asamalar: eslestir(c)
     log("BİTTİ")

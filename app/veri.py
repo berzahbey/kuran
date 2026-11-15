@@ -210,6 +210,31 @@ HADIS_KOLLAR = ["bukhari", "muslim", "abudawud", "tirmidhi", "nasai", "ibnmajah"
 HADIS_ADLARI = {"bukhari": "Buhârî", "muslim": "Müslim", "abudawud": "Ebû Dâvûd", "tirmidhi": "Tirmizî", "nasai": "Nesâî",
                 "ibnmajah": "İbn Mâce", "malik": "Muvatta", "nawawi": "Nevevî — Kırk Hadis", "qudsi": "Kudsî Hadisler", "dehlawi": "Dehlevî — Kırk Hadis"}
 
+# fawazahmed0/hadith-api'de olmayan ek hadis kitapları (AhmedBaset/hadith-json; Arapça + İngilizce)
+HADIS_JSON_URL = RAW + "/AhmedBaset/hadith-json/main/db/by_book"
+HADIS_EK = {"darimi": ("the_9_books/darimi.json", "Dârimî — Sünen"), "ahmed": ("the_9_books/ahmed.json", "Ahmed b. Hanbel — Müsned (seçme)"),
+            "mishkat": ("other_books/mishkat_almasabih.json", "Mişkâtü'l-Mesâbîh"), "riyad": ("other_books/riyad_assalihin.json", "Riyâzü's-Sâlihîn"),
+            "bulugh": ("other_books/bulugh_almaram.json", "Bulûğu'l-Merâm"), "shamail": ("other_books/shamail_muhammadiyah.json", "Tirmizî — Şemâil"),
+            "adab": ("other_books/aladab_almufrad.json", "Buhârî — el-Edebü'l-Müfred")}
+HADIS_ADLARI.update({k: v[1] for k, v in HADIS_EK.items()})
+
+def hadis_json_yukle(c, kol):
+    if c.execute("SELECT 1 FROM hadis_kol WHERE kol=? AND dil='ara'", (kol,)).fetchone(): return True
+    t = indir(f"{HADIS_JSON_URL}/{HADIS_EK[kol][0]}", zaman=240)
+    if not t: return False
+    d = json.loads(t); ara, eng = [], []
+    for h in d["hadiths"]:
+        no = str(h.get("idInBook") or h["id"])
+        if h.get("arabic"): ara.append((kol, "ara", no, h.get("chapterId"), h["arabic"], "[]"))
+        e = h.get("english") or {}
+        et = (e.get("narrator", "") + " " + e.get("text", "")).strip() if isinstance(e, dict) else str(e)
+        if et: eng.append((kol, "eng", no, h.get("chapterId"), re.sub(r"\s+", " ", et), "[]"))
+    with _kilit:
+        c.executemany("INSERT OR REPLACE INTO hadis VALUES(?,?,?,?,?,?)", ara + eng)
+        for dil in ("ara", "eng"): c.execute("INSERT OR REPLACE INTO hadis_kol VALUES(?,?,?,?)", (kol, dil, HADIS_EK[kol][1], "{}"))
+        c.commit()
+    return True
+
 def hadis_kol_yukle(c, kol, dil):
     if c.execute("SELECT 1 FROM hadis_kol WHERE kol=? AND dil=?", (kol, dil)).fetchone(): return True
     t = indir(f"{HADIS_URL}/editions/{dil}-{kol}.min.json", zaman=180)

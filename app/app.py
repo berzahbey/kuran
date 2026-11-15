@@ -32,7 +32,7 @@ def ilk_kurulum():
             with V._kilit:
                 c.executemany("INSERT OR REPLACE INTO sure_bilgi VALUES(?,?,?)",
                               [(x["chapter"], x["arabicname"], x["revelation"]) for x in json.loads(t)["chapters"]]); c.commit()
-    if not c.execute("SELECT 1 FROM durum WHERE asama='yalin_kaldir'").fetchone():   # bir kerelik: eski taslak/onaylı kayıtlar silinir; meal yalnız Zahir'in meali
+    if not c.execute("SELECT 1 FROM durum WHERE asama='yalin_kaldir'").fetchone():   # bir kerelik: eski taslak/onaylı kayıtlar silinir; meal yalnız Türkçe meal
         with V._kilit:
             c.execute("DELETE FROM yalin_meal"); c.execute("INSERT OR REPLACE INTO durum(asama, bilgi) VALUES('yalin_kaldir','')"); c.commit()
     ozel_yukle(); osm_eksikleri_tamamla()
@@ -41,6 +41,11 @@ def ilk_kurulum():
     # tüm külliyat henüz inmediyse arka planda indirmeye başla
     if os.environ.get("KURAN_OTOMATIK_INDIR", "1") == "1" and not c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone():
         kur_baslat()
+    elif c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone() and \
+            any(not c.execute("SELECT 1 FROM hadis_kol WHERE kol=? AND dil='ara'", (k,)).fetchone() for k in V.HADIS_EK):
+        # sonradan eklenen hadis kitaplarını indir ve hadis-ayet bağlantılarını yeniden kur
+        _kurulum["surec"] = subprocess.Popen([sys.executable, os.path.join(BURASI, "kur.py"), "--asama", "hadis,eslestir"],
+                                             stdout=open(_kurulum["log"], "w"), stderr=subprocess.STDOUT)
 threading.Thread(target=lambda: (__import__("time").sleep(2), ilk_kurulum()), daemon=True).start()
 
 # ---------------- Osmanlıca çevirici (Zahir'in osmanlica-cevirici servisi) ----------------
@@ -207,7 +212,7 @@ def temel_dipnot(s, a=None):
 
 @app.get("/api/sure/{s}")
 def sure(s: int, meal: str = "", ana: str = ""):
-    """Okuma görünümü: Arapça + ana metin (Zahir'in meali; ana= verilirse o meal, ör. Hollandaca). meal verilirse karşılaştırma meali de eklenir."""
+    """Okuma görünümü: Arapça + ana metin (Türkçe meal; ana= verilirse o meal, ör. Hollandaca). meal verilirse karşılaştırma meali de eklenir."""
     V.arapca_yukle(c)
     if meal: V.meal_sure_yukle(c, meal, s)
     if ana and ana != TEMEL_MEAL: V.meal_sure_yukle(c, ana, s)
@@ -277,7 +282,7 @@ def mealler(s: int, a: int, dil: str = ""):
                       + (" AND k.dil=?" if dil else ""), s, a, *([dil] if dil else [])):
         if r["id"].endswith("-la") and r["dil"] != "Turkish": continue  # Latin harf çevriyazı kopyaları
         if r["id"].endswith("-la") and r["dil"] == "Turkish": continue
-        if r["id"] == TEMEL_MEAL: continue  # Zahir'in meali zaten ana metin; listede tekrar gösterilmez
+        if r["id"] == TEMEL_MEAL: continue  # Türkçe meal zaten ana metin; listede tekrar gösterilmez
         r["yazar"] = V.YAZAR_ADI.get(r["id"], r["yazar"])
         if r["metin"] == RESIM: r["metin"] = ""; r["resim"] = f"/api/resim/{r['id']}/{s}/{a}.png"
         sp = tek("SELECT sayfa FROM ozel_sayfa WHERE id=? AND s=? AND a=?", r["id"], s, a)
@@ -322,6 +327,72 @@ def tefsir_metin(slug: str, s: int, a: int):
     if not r: raise HTTPException(404, "Bu tefsirde bu ayet için ayrı metin yok (önceki ayetle birlikte açıklanmış olabilir).")
     k = tek("SELECT * FROM tefsir_kaynak WHERE slug=?", slug) or {}
     return {**tefsir_meta(slug, k), "metin": V.ac(r["metin"])}
+
+# ---------------- Rivayetler (rivâyet tefsirlerinden ayet ayet) ----------------
+RIVAYET_KAYNAK = [("mawsoo-at-al-tafsir-al-ma-thoor", "Mevsûatü't-Tefsîri'l-Me'sûr"), ("al-durr-al-manthur", "Süyûtî — ed-Dürrü'l-Mensûr"),
+                  ("tafsir-ibn-abi-hatim", "İbn Ebî Hâtim"), ("ar-tafsir-al-tabari", "Taberî — Câmiu'l-Beyân")]
+_HAREKE = re.compile(r"[\u064B-\u0652\u0670\u0640]")
+def _sade(t): return _HAREKE.sub("", t)
+_MERFU = re.compile(r"رسول الله|النبي|ﷺ|صلى الله عليه")
+
+def rivayet_bol(slug, metin):
+    """Tefsir metnini tek tek rivayetlere böler: [{"no","bolum","metin"}]."""
+    out = []
+    if slug == "mawsoo-at-al-tafsir-al-ma-thoor":
+        bolum = ""
+        for p in re.split(r"\n(?=[٠-٩0-9]+-\s)", metin):
+            m = re.match(r"([٠-٩0-9]+)-\s*(.*)", p, re.S)
+            if not m:
+                h = re.findall(r"(?:^|\n|\s)-\s*([^\n\[]{3,60})", p)
+                if h: bolum = h[-1].strip()
+                continue
+            govde = m.group(2)
+            h = re.search(r"\n\s*-\s*([^\n\[]{3,60})\s*(?:\[\[|$)", govde)
+            if h: govde, yeni_bolum = govde[:h.start()], h.group(1).strip()
+            else: yeni_bolum = None
+            out.append({"no": m.group(1), "bolum": bolum, "metin": govde.strip()})
+            if yeni_bolum: bolum = yeni_bolum
+    elif slug == "al-durr-al-manthur":
+        for p in re.split(r"\n\s*\n", metin):
+            if "أخرج" in _sade(p): out.append({"no": "", "bolum": "", "metin": p.strip()})
+    elif slug == "tafsir-ibn-abi-hatim":
+        for p in re.split(r"(?=\[\s*[٠-٩0-9]+\s*\])", metin):
+            m = re.match(r"\[\s*([٠-٩0-9]+)\s*\]\s*(.*)", p, re.S)
+            if m: out.append({"no": m.group(1), "bolum": "", "metin": m.group(2).strip()})
+    else:
+        for p in re.split(r"\n\s*\n", metin):
+            if re.match(r"\s*\d*\s*[-–]?\s*(حدثن|حدثني|أخبرن)", _sade(p)): out.append({"no": "", "bolum": "", "metin": p.strip()})
+    for x in out:
+        x["metin"] = re.sub(r"\(p-[^)]*\)", "", x["metin"])[:4000]
+        x["merfu"] = bool(_MERFU.search(_sade(x["metin"])))
+    return [x for x in out if len(x["metin"]) > 25]
+
+@app.get("/api/ayet/{s}/{a}/rivayetler")
+def rivayetler(s: int, a: int):
+    tefsir_sure_hazirla(s)
+    sonuc = []
+    for slug, ad in RIVAYET_KAYNAK:
+        V.tefsir_sure_yukle(c, slug, s)
+        r = tek("SELECT metin FROM tefsir WHERE slug=? AND s=? AND a=?", slug, s, a)
+        if not r: continue
+        for x in rivayet_bol(slug, V.ac(r["metin"])):
+            x.update(kaynak=ad, slug=slug); sonuc.append(x)
+    for x in sonuc:
+        tr = tek("SELECT metin FROM ceviri_onbellek WHERE anahtar=?", "rivayet:" + hashlib.sha1(x["metin"].encode()).hexdigest()[:16])
+        x["ceviri"] = tr["metin"] if tr else None
+    return sonuc
+
+@app.post("/api/rivayet-cevir")
+def rivayet_cevir(d: dict = Body(...)):
+    metin = (d.get("metin") or "")[:4000]; dil = d.get("dil") or "Turkish"
+    anahtar = "rivayet:" + hashlib.sha1(metin.encode()).hexdigest()[:16] + ("" if dil == "Turkish" else ":" + dil)
+    r = tek("SELECT metin FROM ceviri_onbellek WHERE anahtar=?", anahtar)
+    if r: return {"metin": r["metin"]}
+    hedef = {"Turkish": "Türkçeye", "Dutch": "Hollandacaya", "English": "İngilizceye"}.get(dil, "İngilizceye")
+    t = claude(f"Klasik Arapça hadis ve rivayet metinlerini sade, doğru {hedef} çeviren bir uzmansın. Senet zincirini kısalt: yalnız ilk raviyi ve sahâbîyi yaz "
+               "('… İbn Abbas'tan:' gibi). Metnin sonundaki kaynak bilgisini (Buhârî, Müslim vb.) koru. Uydurma ekleme yapma, açıklama yazma; sadece çeviriyi ver.", metin, 1500)
+    with V._kilit: c.execute("INSERT OR REPLACE INTO ceviri_onbellek VALUES(?,?)", (anahtar, t)); c.commit()
+    return {"metin": t}
 
 # ---------------- Hadisler ----------------
 @app.get("/api/ayet/{s}/{a}/hadisler")
@@ -594,7 +665,7 @@ def _isaretle(metin, norm_metin, q):
 _ara_onb = {}
 @app.get("/api/ara")
 def ara(q: str, meal: str = "", ana: str = "", limit: int = 1000):
-    """Zahir'in mealinde (Türkçe/Osmanlıca), Arapça ayet metninde ve seçili karşılaştırma mealinde arar."""
+    """Türkçe mealnde (Türkçe/Osmanlıca), Arapça ayet metninde ve seçili karşılaştırma mealinde arar."""
     q = q.strip()
     if len(q) < 2: raise HTTPException(400, "En az iki harf yazın.")
     sonuc, gorulen = [], set()
@@ -670,7 +741,7 @@ def kur_baslat():
                                          stdout=open(_kurulum["log"], "w"), stderr=subprocess.STDOUT)
     return {"durum": "başladı"}
 
-# Yapay zekâyla meal üretimi kaldırıldı: meal Zahir'in mealidir; yapay zekâ yalnız çeviri (nüzul vb.) için kullanılır.
+# Yapay zekâyla meal üretimi kaldırıldı: meal Türkçe mealdir; yapay zekâ yalnız çeviri (nüzul vb.) için kullanılır.
 
 app.mount("/static", StaticFiles(directory=os.path.join(BURASI, "static")), name="static")
 
