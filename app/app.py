@@ -224,6 +224,10 @@ def sure(s: int, meal: str = "", ana: str = ""):
             elif a - 1 in tm or (a - 1 in yl and yl[a - 1].get("durum") in ("temel", "birlesik")):
                 yl[a] = {"metin": "", "dipnotlar": "[]", "durum": "birlesik"}
     ns = {r["a"]: r["n"] for r in satirlar("SELECT a, count(*) n FROM notlar WHERE s=? GROUP BY a", s)}
+    ih = {}
+    for r in satirlar("SELECT a, metin FROM analiz WHERE s=? AND tur='gorus_json'", s):
+        try: ih[r["a"]] = int(json.loads(r["metin"]).get("onem") or 0)
+        except Exception: pass
     yon = (tek("SELECT yon FROM meal_kaynak WHERE id=?", meal) or {}).get("yon", "ltr") if meal else "ltr"
     sayfa = {r["a"]: r["sayfa"] for r in satirlar("SELECT a, sayfa FROM ozel_sayfa WHERE id=? AND s=?", meal, s)} if meal else {}
     resimli = any(v == RESIM for v in ml.values())
@@ -232,7 +236,7 @@ def sure(s: int, meal: str = "", ana: str = ""):
         {"a": a, "arapca": ar.get(a, ""), "meal": ml.get(a, ""), "yalin": (yl.get(a) or {}).get("metin"),
          "dipnotlar": json.loads((yl.get(a) or {}).get("dipnotlar") or "[]"),
          "yalin_osm": (yl.get(a) or {}).get("metin_osm"), "dipnotlar_osm": json.loads((yl.get(a) or {}).get("dipnotlar_osm") or "[]"),
-         "yalin_durum": (yl.get(a) or {}).get("durum"), "not": ns.get(a, 0)} for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
+         "yalin_durum": (yl.get(a) or {}).get("durum"), "not": ns.get(a, 0), "ihtilaf": ih.get(a, 0)} for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
 
 @app.get("/api/ayet/{s}/{a}")
 def ayet(s: int, a: int, ana: str = ""):
@@ -485,28 +489,69 @@ def kaynak_paketi(s, a, tefsir_siniri=2500, toplam=90000):
 
 @app.get("/api/ayet/{s}/{a}/analiz")
 def analiz_getir(s: int, a: int):
-    return {r["tur"]: r["metin"] for r in satirlar("SELECT tur, metin FROM analiz WHERE s=? AND a=?", s, a)}
+    r = {x["tur"]: x["metin"] for x in satirlar("SELECT tur, metin FROM analiz WHERE s=? AND a=?", s, a)}
+    if "gorus_json" in r: r["gorus"] = json.loads(r.pop("gorus_json"))
+    return r
+
+GORUS_SISTEM = ("Sen klasik Arap dili, tefsir usulü ve Kur'an ilimlerinde uzman, tarafsız bir araştırmacısın. Yalnız sana verilen kaynaklara dayan; "
+                "kaynakta olmayanı uydurma, her görüşün sahibini kaynaklardaki adla yaz. Türkçe yaz. Sadece geçerli JSON döndür.")
+GORUS_GOREV = """
+
+GÖREV: Bu ayette müfessirlerin ve meallerin AYRIŞTIĞI noktaları eksiksiz çıkar. Hem KELİME düzeyinde (bir kelimenin farklı anlaşılması,
+kök/lügat anlamı, farklı okunuşu, zamirin kime döndüğü, edatın manası) hem AYET düzeyinde (ayetin kimin hakkında olduğu, hükmü, nesih,
+mecaz/hakikat, kıraat farkı) ayrışmaları yaz. Az da olsa farklı bir görüş varsa göster; uydurma. Ayrışma yoksa listeyi boş bırak.
+JSON biçimi:
+{"onem": 0-3 (0 ayrışma yok, 1 küçük, 2 belirgin, 3 çok önemli),
+ "ozet": "1-2 cümlelik genel özet",
+ "kelimeler": [{"kelime": "Arapça kelime", "okunus": "Latin harfle", "mesele": "ne üzerinde ayrışılıyor",
+                "gorusler": [{"gorus": "anlam/yorum", "kimler": "müfessirler/mealler"}], "lugat": "kök ve klasik lügat anlamı (kısa)"}],
+ "ayet": [{"mesele": "...", "gorusler": [{"gorus": "...", "kimler": "..."}]}],
+ "ortak": ["müfessirlerin ittifak ettiği nokta (kimler)"],
+ "mealler": ["Türkçe meallerin ayrıştığı yer: hangi mealler nasıl çevirmiş"]}"""
+
+def gorus_analiz(s, a):
+    t = claude(GORUS_SISTEM, kaynak_paketi(s, a) + GORUS_GOREV, 6000)
+    m = re.search(r"\{.*\}", t, re.S)
+    try: d = json.loads(m[0])
+    except Exception: raise HTTPException(502, "Model geçerli JSON döndürmedi.")
+    with V._kilit:
+        c.execute("INSERT OR REPLACE INTO analiz(s,a,tur,metin) VALUES(?,?,?,?)", (s, a, "gorus_json", json.dumps(d, ensure_ascii=False))); c.commit()
+    return d
 
 @app.post("/api/ayet/{s}/{a}/analiz")
 def analiz_yap(s: int, a: int):
-    sistem = ("Sen klasik Arap dili, tefsir usulü ve Kur'an ilimlerinde uzman, tarafsız bir araştırmacısın. Sana verilen kaynaklara dayan; "
-              "kaynakta olmayanı uydurma, emin olmadığını belirt. Türkçe yaz.")
-    mesaj = kaynak_paketi(s, a) + """
+    return {"gorus": gorus_analiz(s, a)}
 
-GÖREV: Bu ayet hakkında müfessirlerin AYNI ve AYRI görüşlerini çıkar. Markdown ile şu başlıklar:
-## Ortak görüşler
-(müfessirlerin ittifak ettiği noktalar; her maddede hangi müfessirler olduğunu yaz)
-## Farklı görüşler
-(her ihtilaf noktası için: mesele → görüş A (kimler) / görüş B (kimler) …)
-## Kelime ve lügat notları
-(kök anlamları, kelime tercihleri, meallerin ayrıştığı kelimeler)
-## Mealler arasındaki farklar
-(Türkçe meallerin hangi kelimelerde ve neden ayrıştığı)
-## Kronolojik gelişim
-(ilk dönemden günümüze yorumun nasıl değiştiği, kısaca)"""
-    t = claude(sistem, mesaj, 5000)
-    with V._kilit: c.execute("INSERT OR REPLACE INTO analiz(s,a,tur,metin) VALUES(?,?,?,?)", (s, a, "gorusler", t)); c.commit()
-    return {"gorusler": t}
+# --- tüm ayetlerin görüş analizi arka planda (kota dolarsa bekler, kaldığı yerden sürer) ---
+_toplu = {"calisiyor": False, "dur": False, "son": "", "hata": ""}
+def _toplu_dongu():
+    import time as _t
+    _toplu.update(calisiyor=True, dur=False, hata="")
+    try:
+        for s in range(1, 115):
+            for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
+                if _toplu["dur"]: return
+                if c.execute("SELECT 1 FROM analiz WHERE s=? AND a=? AND tur='gorus_json'", (s, a)).fetchone(): continue
+                while not _toplu["dur"]:
+                    try: gorus_analiz(s, a); _toplu["son"] = f"{s}:{a}"; break
+                    except HTTPException as e:
+                        if e.status_code == 429: _toplu["hata"] = "Günlük kota doldu; bir saat sonra tekrar denenecek."; _t.sleep(3600)
+                        elif e.status_code == 400: _toplu["hata"] = e.detail; return
+                        else: _toplu["hata"] = f"{s}:{a} atlandı ({e.detail})"; break
+                    except Exception as e: _toplu["hata"] = f"{s}:{a} atlandı ({e})"; break
+    finally: _toplu["calisiyor"] = False
+
+@app.get("/api/analiz/toplu")
+def toplu_durum():
+    n = c.execute("SELECT count(*) FROM analiz WHERE tur='gorus_json'").fetchone()[0]
+    return {"yapilan": n, "toplam": 6236, **_toplu, "yapay_zeka": yz.hazir()}
+
+@app.post("/api/analiz/toplu")
+def toplu_baslat(d: dict = Body(default={})):
+    if d.get("dur"): _toplu["dur"] = True; return toplu_durum()
+    if not yz.hazir(): raise HTTPException(400, "Yapay zekâ tanımlı değil (YZ_ANAHTAR).")
+    if not _toplu["calisiyor"]: threading.Thread(target=_toplu_dongu, daemon=True).start()
+    return toplu_durum()
 
 @app.post("/api/ayet/{s}/{a}/yalin-oneri")
 def yalin_oneri(s: int, a: int):

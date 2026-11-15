@@ -127,6 +127,8 @@ aside#panel{overflow:auto;border-left:1px solid var(--cizgi);background:var(--ka
 .oge b{font-size:13px}
 .rtl{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:19px;line-height:1.9}
 
+.gorus-bas{margin:16px 0 8px;font-size:15px}.gorus-l{margin:6px 0 4px;padding-left:20px;line-height:1.6}.gorus-l li{margin:3px 0}.kimler{color:var(--soluk);font-size:.9em}
+.ar-kelime{font-family:var(--ar-font);font-size:24px;margin-right:6px}.ihtilaf{color:var(--uyari);text-decoration:none;font-size:12px}
 #arastirma{position:fixed;inset:0;z-index:65;background:var(--bg);color:var(--yazi);display:none;flex-direction:column}
 .ar-ust{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--cizgi);background:var(--kart);flex-wrap:wrap}
 .ar-ic{flex:1;display:grid;grid-template-columns:210px minmax(0,1fr);min-height:0}
@@ -171,7 +173,7 @@ textarea{min-height:80px}
 .modal .kapat{position:absolute;right:12px;top:10px;border:0;background:none;font-size:22px;cursor:pointer}
 .lane{font-size:14px;line-height:1.6}.lane .ar{font-family:Amiri,serif;font-size:18px}
 .istat{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:10px 0}
-.istat div{background:#f6f4ee;border-radius:8px;padding:8px}.istat b{display:block;font-size:18px}
+.istat div{background:var(--zemin2);border-radius:8px;padding:8px}.istat b{display:block;font-size:18px}
 pre.log{background:#1f2328;color:#d7e3dc;padding:8px;border-radius:6px;font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap}
 .bos{color:var(--soluk);text-align:center;padding:30px}
 .yukleniyor{color:var(--soluk);padding:12px}
@@ -276,7 +278,7 @@ async function sureAc(s,a=null){
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
      ${x.yalin&&D.dil==="osm"?(x.yalin_osm?`<div class="yalin osm"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin_osm,x.dipnotlar_osm)}</div>`:`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}<div class="osm-yok">Osmanlıcası çeviricide hazırlanıyor</div></div>`):x.yalin?`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:(x.yalin_durum==="birlesik"?`<div class="yalin eksik"><span class="sade-no">${x.a}</span>↑ önceki ayetle birlikte çevrildi</div>`:`<div class="yalin eksik"><span class="sade-no">${x.a}</span>Yalın meal henüz hazırlanmadı.</div>`)}
      ${x.meal?`<div class="meal ${d.meal_yon==="rtl"?"meal-rtl":""}"><span class="kucuk">${esc(kars)}${d.meal_sayfa[x.a]?` · <a href="#" onclick="event.stopPropagation();sayfaGoster('${D.meal}',${d.meal_sayfa[x.a]});return false">s. ${d.meal_sayfa[x.a]}</a>`:""}:</span> ${d.meal_resim?`<img class="ayet-resim" src="${x.meal}" loading="lazy" alt="">`:esc(x.meal)}</div>`:""}
-     ${x.not?`<div class="ust"><span></span><span>✎ ${x.not} not</span></div>`:""}</div>`).join("")+
+     ${x.not||x.ihtilaf>=2?`<div class="ust"><span>${x.ihtilaf>=2?`<a href="#" class="ihtilaf" title="Bu ayette müfessirler arasında ${x.ihtilaf>=3?"çok önemli":"belirgin"} görüş ayrılığı var" onclick="event.stopPropagation();arastirmaAc(${s},${x.a},'gorus');return false">⚖ farklı görüşler</a>`:""}</span><span>${x.not?`✎ ${x.not} not`:""}</span></div>`:""}</div>`).join("")+
    `<div class="okuma-nav">${s>1?`<button onclick="sureAc(${s-1})">‹ ${esc(sureAdKisa(s-1))}</button>`:"<span></span>"}${s<114?`<button onclick="sureAc(${s+1})">${esc(sureAdKisa(s+1))} ›</button>`:"<span></span>"}</div>`;
   if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
 }
@@ -383,6 +385,25 @@ async function tefsirSekme(){
   ciz();
 }
 
+
+
+async function topluCiz(){const k=$("#topluKutu");if(!k)return;const u=await api("/api/analiz/toplu");
+  k.innerHTML=`<p>Yapay zekâ her ayetin tefsirlerini okuyup kelime ve ayet düzeyindeki farklı görüşleri çıkarır; sonuçlar saklanır ve okuma ekranında ⚖ işaretiyle gösterilir.
+   Ücretsiz kotada günde belli sayıda ayet yapılır; kota dolunca bekler, ertesi gün kendiliğinden devam eder.</p>
+   <p><b>${u.yapilan.toLocaleString()} / ${u.toplam.toLocaleString()}</b> ayet analiz edildi${u.calisiyor?` · çalışıyor${u.son?" (son: "+u.son+")":""}`:""}</p>
+   ${u.hata?`<p class="not">${esc(u.hata)}</p>`:""}
+   ${u.yapay_zeka?(u.calisiyor?`<button class="btn ikincil" onclick="api('/api/analiz/toplu',{method:'POST',body:JSON.stringify({dur:true})}).then(topluCiz)">Durdur</button>`:`<button class="btn" onclick="api('/api/analiz/toplu',{method:'POST'}).then(topluCiz)">Tüm ayetleri analiz et</button>`):"<p>Yapay zekâ anahtarı tanımlı değil.</p>"}`;
+  if(u.calisiyor)setTimeout(()=>{if($("#topluKutu"))topluCiz()},15000)}
+function gorusHtml(g){if(!g)return"";const gl=x=>`<ul class="gorus-l">${(x.gorusler||[]).map(o=>`<li>${esc(o.gorus)}${o.kimler?` <span class="kimler">— ${esc(o.kimler)}</span>`:""}</li>`).join("")}</ul>`;
+  const onem=["Ayrışma yok","Küçük ayrışma","Belirgin ayrışma","Çok önemli ayrışma"][g.onem||0];
+  return `<div class="ar-kart"><div class="bas"><b>⚖ ${onem}</b><span class="kucuk">yapay zekâ özeti · kaynaklara dayalı</span></div><div class="ar-metin">${esc(g.ozet||"")}</div></div>
+   ${(g.kelimeler||[]).length?`<h4 class="gorus-bas">Kelimelerde farklı görüşler</h4>`+g.kelimeler.map(k=>`<div class="ar-kart gorus-k"><div class="bas"><b><span class="ar-kelime">${esc(k.kelime)}</span> ${k.okunus?`<i>${esc(k.okunus)}</i>`:""}</b><span class="kucuk">${esc(k.mesele||"")}</span></div>${gl(k)}${k.lugat?`<div class="kucuk"><b>Lügat:</b> ${esc(k.lugat)}</div>`:""}</div>`).join(""):""}
+   ${(g.ayet||[]).length?`<h4 class="gorus-bas">Ayetin anlamında farklı görüşler</h4>`+g.ayet.map(k=>`<div class="ar-kart gorus-k"><div class="bas"><b>${esc(k.mesele)}</b></div>${gl(k)}</div>`).join(""):""}
+   ${(g.ortak||[]).length?`<h4 class="gorus-bas">Ortak görüşler</h4><div class="ar-kart"><ul class="gorus-l">${g.ortak.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+   ${(g.mealler||[]).length?`<h4 class="gorus-bas">Mealler arasındaki farklar</h4><div class="ar-kart"><ul class="gorus-l">${g.mealler.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}`}
+function gorusDuzMetin(g){const L=[];L.push(g.ozet||"");(g.kelimeler||[]).forEach(k=>{L.push(`\n${k.kelime} (${k.okunus||""}): ${k.mesele||""}`);(k.gorusler||[]).forEach(o=>L.push(`- ${o.gorus} — ${o.kimler||""}`));if(k.lugat)L.push("Lügat: "+k.lugat)});
+  (g.ayet||[]).forEach(k=>{L.push(`\n${k.mesele}`);(k.gorusler||[]).forEach(o=>L.push(`- ${o.gorus} — ${o.kimler||""}`))});if((g.ortak||[]).length)L.push("\nOrtak: "+g.ortak.join("; "));return L.join("\n")}
+
 // ---------- Araştırma modu ----------
 let AM=null;   // {s,a,veri}
 const AM_DIL={tefsir:null,meal:null,tur:"hepsi"};
@@ -458,10 +479,15 @@ async function arastirmaAc(s,a,bolum){
     say("hadis",h.length);
     $("#amb-hadis").innerHTML=h.length?h.map(x=>{const tr=(UI==="Turkish"?x.tur:x.eng)||x.tur||x.eng||"";return amKart(`${esc(x.kol_ad)} ${esc(x.no)}`,`%${Math.round(x.skor*100)} eşleşme${x.derece.length?" · "+esc(x.derece.map(d=>d.name+": "+d.grade).join("; ")):""}`,tr,
       {ek:x.ara?`<details><summary class="kucuk">Arapça metin</summary><div class="ar-metin rtl">${esc(x.ara)}</div></details>`:""})}).join(""):`<p class="kucuk">Bu ayetin metnini doğrudan içeren hadis bulunamadı.</p>`});
-  // Farklı görüşler (yapay zekâ)
-  kos(async()=>{const g=await api(`/api/ayet/${s}/${a}/analiz`);if(AM.s!==s||AM.a!==a)return;
-    $("#amb-gorus").innerHTML=(g.gorusler?amKart("Müfessirlerin ortak ve farklı görüşleri","yapay zekâ, kaynaklara dayalı",g.gorusler,{kisalt:false}):`<p class="kucuk">Tüm tefsir ve mealler taranarak ortak ve farklı görüşler çıkarılır.</p>`)+
-      (D.yz?`<p><button class="btn ikincil" onclick="this.disabled=true;this.textContent='Analiz ediliyor… (1-2 dk)';api('/api/ayet/${s}/${a}/analiz',{method:'POST'}).then(()=>arastirmaAc(${s},${a})).catch(e=>{this.textContent=e.message})">${g.gorusler?"Yeniden analiz et":"Görüşleri analiz et"}</button></p>`:"");say("gorus",g.gorusler?1:0)});
+  // Farklı görüşler: meallerin ayrıştığı kelimeler (hesaplanan) + müfessir görüşleri (yapay zekâ, saklanır)
+  kos(async()=>{const [g,k]=await Promise.all([api(`/api/ayet/${s}/${a}/analiz`),api(`/api/ayet/${s}/${a}/karsilastir?dil=${UI==="Turkish"?"Turkish":(UI==="Dutch"?"Dutch":"English")}`).catch(()=>null)]);if(AM.s!==s||AM.a!==a)return;
+    const kel=k&&k.sayi>1?`<h4 class="gorus-bas">Meallerin ayrıştığı kelime tercihleri <span class="kucuk">(${k.sayi} meal karşılaştırıldı)</span></h4><div class="ar-kart"><div class="cipler">${k.ayrisan.slice(0,30).map(o=>`<span class="cip">${esc(o.ornek)} · ${o.sayi}</span>`).join("")}</div><div class="kucuk" style="margin-top:6px">Sayı, o tercihi yapan meal sayısıdır. Ayrıntı: ayet panelindeki "Mealler" sekmesi.</div></div>`:"";
+    const ciz=gg=>{const i=gg?AM_KAYIT.push({baslik:"Farklı görüşler",metin:gorusDuzMetin(gg)})-1:-1;
+      $("#amb-gorus").innerHTML=(gg?gorusHtml(gg)+`<div class="ar-eylem"><button onclick="amKopyala(${i})">📋 Kopyala</button><button onclick="amNot(${i})">✎ Not al</button><button onclick="amPaylas(${i})">↗ Paylaş</button>${D.yz?`<button onclick="this.disabled=true;this.textContent='Yeniden analiz ediliyor…';api('/api/ayet/${s}/${a}/analiz',{method:'POST'}).then(()=>arastirmaAc(${s},${a},'gorus'))">↻ Yeniden analiz et</button>`:""}</div>`
+        :(D.yz?`<div class="ar-kart kucuk" id="amGorusBekle">Müfessirlerin görüşleri tefsirlerden çıkarılıyor… (yarım dakika – 2 dakika; sonuç saklanır)</div>`:`<div class="ar-kart kucuk">Müfessir görüşlerinin analizi için yapay zekâ anahtarı gerekir (Ayarlar).</div>`))+kel;
+      say("gorus",gg?((gg.kelimeler||[]).length+(gg.ayet||[]).length):0)};
+    ciz(g.gorus);
+    if(!g.gorus&&D.yz){try{const r=await api(`/api/ayet/${s}/${a}/analiz`,{method:"POST"});if(AM&&AM.s===s&&AM.a===a)ciz(r.gorus)}catch(e){const el=$("#amGorusBekle");if(el)el.textContent="Analiz yapılamadı: "+e.message}}});
   if(bolum)setTimeout(()=>document.getElementById("am-"+bolum)?.scrollIntoView(),400);
 }
 function amNotlarCiz(n){say_=n.length;$("#amn-not").textContent=n.length||"";
@@ -529,11 +555,7 @@ async function hadisSekme(){
 
 async function goruslerSekme(){
   const a=await api(`/api/ayet/${D.s}/${D.a}/analiz`); const k=$("#gorusKutu"); if(!k)return;
-  k.innerHTML=(`<p class="kucuk">Tüm tefsir ve mealler taranarak müfessirlerin ortak ve farklı görüşleri çıkarılır (yapay zekâ, kaynaklara dayalı). Sonuç kaydedilir.</p>
-   <button class="btn" onclick="analizYap(this)">${a.gorusler?"Yeniden analiz et":"Görüşleri analiz et"}</button>
-   <div class="md" id="analiz">${a.gorusler?md(a.gorusler):""}</div>`);
-}
-async function analizYap(b){b.disabled=true;b.textContent="Tefsirler okunuyor… (1-2 dk)";try{const d=await api(`/api/ayet/${D.s}/${D.a}/analiz`,{method:"POST"});$("#analiz").innerHTML=md(d.gorusler);b.textContent="Yeniden analiz et"}catch(e){b.textContent=e.message}b.disabled=false}
+  k.innerHTML=a.gorus?gorusHtml(a.gorus)+`<p><button class="btn ikincil" onclick="arastirmaAc(D.s,D.a,'gorus')">🔎 Araştırma modunda aç</button></p>`:`<p class="kucuk">Henüz analiz edilmedi.</p><button class="btn" onclick="arastirmaAc(D.s,D.a,'gorus')">Görüşleri analiz et</button>`}
 
 function yalinSekme(){
   const y=D.ayet.yalin||{metin:"",dipnotlar:"[]",durum:"taslak"}; const dn=JSON.parse(y.dipnotlar||"[]");
@@ -593,8 +615,9 @@ async function kaynakAc(yenile=false){const d=await api("/api/durum");const y=(a
    <div><b>${d.tefsir_kaynak}</b>tefsir · ${y(d.tefsir_sure,d.tefsir_sure_hedef)} indirildi</div><div><b>${d.hadis.toLocaleString()}</b>hadis metni (ar/tr/en)</div>
    <div><b>${d.hadis_ayet.toLocaleString()}</b>hadis–ayet bağlantısı</div><div><b>${d.db_mb} MB</b>veritabanı</div><div><b>${d.yapay_zeka?"Açık":"Kapalı"}</b>yapay zekâ (çeviriler, görüş analizi)</div></div>
    <button class="btn" ${d.kurulum_calisiyor?"disabled":""} onclick="api('/api/kur',{method:'POST'}).then(()=>setTimeout(()=>kaynakAc(true),1500))">${d.kurulum_calisiyor?"İndiriliyor…":"Tüm kaynakları indir / güncelle"}</button>
-   ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}`;
-  if(yenile){const k=$("#kaynakGovde");if(k)k.innerHTML=govde;}
+   ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}
+   <h3 style="margin-top:22px">Farklı görüşler analizi</h3><div id="topluKutu" class="kucuk">…</div>`;
+  if(yenile){const k=$("#kaynakGovde");if(k)k.innerHTML=govde;topluCiz()}
   else{ayarlarAc("kaynak");return}
   if(d.kurulum_calisiyor)setTimeout(()=>{if($("#modalArka").style.display==="flex"&&$("#kaynakGovde"))kaynakAc(true)},4000)}
 
