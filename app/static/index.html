@@ -239,7 +239,8 @@ function sureAdKisa(s){return UI==="Turkish"?D.sureler[s-1].ad:SURE_LAT[s-1][0]}
 const DILLER={Turkish:"Türkçe",Ottoman:"Osmanlıca",Dutch:"Hollandaca",English:"İngilizce",German:"Almanca",French:"Fransızca",Bosnian:"Boşnakça",Azerbaijani:"Azerice"};
 const D={dil:(()=>{try{return localStorage.getItem("dil")||"tr"}catch(e){return "tr"}})(),arapca:(()=>{try{return localStorage.getItem("arapca")==="1"}catch(e){return false}})(),yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
 
-function dilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a)}
+function okunanAyet(){const m=$("#metin"),ust=m.getBoundingClientRect().top;for(const e of m.querySelectorAll(".ayet")){const r=e.getBoundingClientRect();if(r.bottom>ust+10)return {id:e.id,fark:r.top-ust}}return null}
+function dilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a,okunanAyet())}
 function dilUygula(){const b=$("#dilDugme");b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}
 function arapcaDegistir(){D.arapca=!D.arapca;try{localStorage.setItem("arapca",D.arapca?"1":"0")}catch(e){};arapcaUygula()}
 function arapcaUygula(){document.body.classList.toggle("arapca-gizli",!D.arapca);$("#arDugme").classList.toggle("acik",D.arapca)}
@@ -276,7 +277,7 @@ function dipnotGoster(e,b){e.stopPropagation();const ayni=dnAcik===b;dipnotKapat
 function dipnotKapat(){document.querySelectorAll(".dn-pop").forEach(x=>x.remove());dnAcik=null}
 document.addEventListener("scroll",dipnotKapat,true);document.addEventListener("keydown",e=>{if(e.key==="Escape")dipnotKapat()});
 document.addEventListener("click",dipnotKapat);
-async function sureAc(s,a=null){
+async function sureAc(s,a=null,yer=null){
   if(!a&&D.panelS&&D.panelS!==s){D.a=null;D.ayet=null;D.panelS=null;$("#panel").innerHTML="";panelKapat()}   // başka sureye geçince eski surenin ayet paneli kapanır
   D.s=s; sureListe(); $("#metin").innerHTML=`<div class="yukleniyor">${t("Yükleniyor…")}</div>`;
   const d=await api(`/api/sure/${s}?meal=${D.meal}&ana=${anaMeal()}`); const b=D.sureler[s-1]; const hazir=d.ayetler.filter(x=>x.yalin_durum==="onayli"||x.yalin_durum==="taslak").length; const onayli=d.ayetler.filter(x=>x.yalin_durum==="onayli").length;
@@ -290,7 +291,8 @@ async function sureAc(s,a=null){
      ${x.meal?`<div class="meal ${d.meal_yon==="rtl"?"meal-rtl":""}"><span class="kucuk">${esc(kars)}${d.meal_sayfa[x.a]?` · <a href="#" onclick="event.stopPropagation();sayfaGoster('${D.meal}',${d.meal_sayfa[x.a]});return false">s. ${d.meal_sayfa[x.a]}</a>`:""}:</span> ${d.meal_resim?`<img class="ayet-resim" src="${x.meal}" loading="lazy" alt="">`:esc(x.meal)}</div>`:""}
      ${x.not||x.ihtilaf>=2?`<div class="ust"><span>${x.ihtilaf>=2?`<a href="#" class="ihtilaf" title="Bu ayette müfessirler arasında ${x.ihtilaf>=3?"çok önemli":"belirgin"} görüş ayrılığı var" onclick="event.stopPropagation();arastirmaAc(${s},${x.a},'gorus');return false">⚖ farklı görüşler</a>`:""}</span><span>${x.not?`✎ ${x.not} not`:""}</span></div>`:""}</div>`).join("")+
    `<div class="okuma-nav">${s>1?`<button onclick="sureAc(${s-1})">‹ ${esc(sureAdKisa(s-1))}</button>`:"<span></span>"}${s<114?`<button onclick="sureAc(${s+1})">${esc(sureAdKisa(s+1))} ›</button>`:"<span></span>"}</div>`;
-  if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
+  if(yer&&document.getElementById(yer.id)){const m=$("#metin"),e=document.getElementById(yer.id);m.style.scrollBehavior="auto";m.scrollTop+=e.getBoundingClientRect().top-m.getBoundingClientRect().top-yer.fark;m.style.scrollBehavior="";if(a)ayetSec(s,a)}
+  else if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
 }
 
 async function ayetSec(s,a){
@@ -416,7 +418,7 @@ function gorusDuzMetin(g){const L=[];L.push(g.ozet||"");(g.kelimeler||[]).forEac
 
 
 // ---------- Sure araştırması ----------
-function amDilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a);
+function amDilDegistir(){const y_=okunanAyet();D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a,y_);
   if(!AM)return;const y=$("#arastirma");const top=$("#amGovde")?.scrollTop||0;
   if(AM.a){arastirmaAc(AM.s,AM.a)}else{const b=y.querySelector(".ar-ust button[onclick='amDilDegistir()']");if(b){b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}
     saMealCiz(AM.s);saTefsirCiz(AM.s).then(()=>{})}}
