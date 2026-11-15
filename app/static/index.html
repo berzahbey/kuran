@@ -99,7 +99,7 @@ body.arapca-gizli main .besmele-sade{display:block}
 .inis-detay{margin-bottom:12px}.inis-detay summary{display:none}
 .panel-meal{font-family:var(--tr-font);font-size:calc(16px*var(--tr-boy));color:var(--tr-renk);margin:2px 0 6px}
 button.dn{border:0;background:var(--vurgu);color:#fff;border-radius:9px;font-size:10.5px;line-height:1;padding:2px 5px;vertical-align:super;cursor:pointer;margin:0 1px;font-family:system-ui}
-.dn-pop{position:absolute;z-index:60;max-width:420px;background:var(--notbg);color:var(--yazi);border:1px solid var(--cizgi);border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.15);font-size:14px;line-height:1.5}
+.dn-pop{position:fixed;cursor:pointer;z-index:60;max-width:420px;background:var(--notbg);color:var(--yazi);border:1px solid var(--cizgi);border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.15);font-size:14px;line-height:1.5}
 .ayet .meal.meal-rtl{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:19px;line-height:1.9}
 .ayet .meal.meal-rtl .kucuk{direction:ltr;display:inline-block;font-family:system-ui}
 .ayet-resim{display:block;max-width:100%;zoom:var(--resim-boy);margin:4px 0 0 auto;border-radius:4px}
@@ -225,9 +225,14 @@ function sureListe(){
 $("#sureFiltre").oninput=sureListe;
 
 const dipnotluMetin=(m,notlar)=>esc(m).replace(/\[(\d+)\]/g,(x,n)=>notlar&&notlar[n-1]!=null?`<button class="dn" data-not="${esc(notlar[n-1])}" onclick="dipnotGoster(event,this)">${n}</button>`:"");
-function dipnotGoster(e,b){e.stopPropagation();dipnotKapat();const p=document.createElement("div");p.className="dn-pop";p.textContent=b.dataset.not;if(/[\u0600-\u06FF]/.test(b.dataset.not))p.setAttribute("dir","rtl");document.body.appendChild(p);
-  const r=b.getBoundingClientRect();p.style.top=(window.scrollY+r.bottom+6)+"px";p.style.left=Math.max(8,Math.min(r.left-20,innerWidth-p.offsetWidth-12))+"px"}
-function dipnotKapat(){document.querySelectorAll(".dn-pop").forEach(x=>x.remove())}
+let dnAcik=null;
+function dipnotGoster(e,b){e.stopPropagation();const ayni=dnAcik===b;dipnotKapat();if(ayni)return;   // aynı numaraya tekrar basınca kapanır
+  const p=document.createElement("div");p.className="dn-pop";p.textContent=b.dataset.not;if(/[\u0600-\u06FF]/.test(b.dataset.not))p.setAttribute("dir","rtl");
+  p.onclick=ev=>{ev.stopPropagation();dipnotKapat()};document.body.appendChild(p);dnAcik=b;
+  const r=b.getBoundingClientRect();let top=r.bottom+6;if(top+p.offsetHeight>innerHeight-8)top=Math.max(8,r.top-p.offsetHeight-6);
+  p.style.top=top+"px";p.style.left=Math.max(8,Math.min(r.left-20,innerWidth-p.offsetWidth-12))+"px"}
+function dipnotKapat(){document.querySelectorAll(".dn-pop").forEach(x=>x.remove());dnAcik=null}
+document.addEventListener("scroll",dipnotKapat,true);document.addEventListener("keydown",e=>{if(e.key==="Escape")dipnotKapat()});
 document.addEventListener("click",dipnotKapat);
 async function sureAc(s,a=null){
   D.s=s; sureListe(); $("#metin").innerHTML=`<div class="yukleniyor">${t("Yükleniyor…")}</div>`;
