@@ -128,6 +128,7 @@ aside#panel{overflow:auto;border-left:1px solid var(--cizgi);background:var(--ka
 .rtl{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:19px;line-height:1.9}
 
 .ozet-tr{border-left:3px solid var(--vurgu);padding-left:10px;margin-bottom:8px}
+.sa-sec{font-size:14px;max-width:220px;padding:4px}
 .sa-izgara{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px}
 .sa-ayet{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border:1px solid var(--cizgi);border-radius:8px;background:var(--kart);color:var(--yazi);text-decoration:none;font-size:12px}
 .sa-ayet:hover{background:var(--vurgu2)}.sa-ayet.ihtilafli{border-color:var(--uyari)}.sa-ayet span{color:var(--soluk);min-height:1em}
@@ -414,10 +415,12 @@ function gorusDuzMetin(g){const L=[];L.push(g.ozet||"");(g.kelimeler||[]).forEac
 
 
 // ---------- Sure araştırması ----------
+function sureSecici(s){return `<select class="sa-sec" onchange="sureArastirma(+this.value)" title="Sure seç">${D.sureler.map(x=>`<option value="${x.s}" ${x.s===s?"selected":""}>${x.s}. ${esc(sureAdKisa(x.s))}</option>`).join("")}</select>`}
+
 const SA={meal:null,tefsir:null,tefParca:0};
 async function sureArastirma(s,bolum){
   AM={s,a:0};AM_KAYIT.length=0;let o=$("#arastirma");if(!o){o=document.createElement("div");o.id="arastirma";document.body.appendChild(o)}o.style.display="flex";
-  o.innerHTML=`<div class="ar-ust"><b>🔎 ${t("Araştır")}</b><span>${esc(sureAd(s))} — ${t("surenin tamamı")}</span><span style="flex:1"></span>
+  o.innerHTML=`<div class="ar-ust"><b>🔎 ${t("Araştır")}</b>${sureSecici(s)}<span class="kucuk">${t("surenin tamamı")}</span><span style="flex:1"></span>
     <button class="btn ikincil" ${s<=1?"disabled":""} onclick="sureArastirma(${s-1})" title="Önceki sure">‹</button><button class="btn ikincil" ${s>=114?"disabled":""} onclick="sureArastirma(${s+1})" title="Sonraki sure">›</button>
     <button class="btn ikincil" onclick="G.arastirma_boy=Math.max(70,(G.arastirma_boy||100)-10);gorunumUygula()">A−</button><button class="btn ikincil" onclick="G.arastirma_boy=Math.min(220,(G.arastirma_boy||100)+10);gorunumUygula()">A+</button>
     <button class="btn" onclick="arastirmaKapat()">✕</button></div>
@@ -479,14 +482,16 @@ async function saTefsirCiz(s){
   const sure=await api(`/api/sure/${s}?ana=${anaMeal()||""}`);const ay=Object.fromEntries(sure.ayetler.map(x=>[x.a,x]));
   let i=0;const PARCA=15;k.innerHTML="";
   const ekle=()=>{const p=d.ayetler.slice(i,i+PARCA);i+=PARCA;
-    k.insertAdjacentHTML("beforeend",p.map(x=>{const j=AM_KAYIT.push({baslik:`${d.ad} — ${s}:${x.a}`,metin:x.metin})-1;const ar=arMi(x.metin);
+    k.insertAdjacentHTML("beforeend",p.map((x,q)=>{const onceki=(d.ayetler[i-PARCA+q-1]||{}).metin;const ayni=onceki&&onceki===x.metin;
+      const j=AM_KAYIT.push({baslik:`${d.ad} — ${s}:${x.a}`,metin:x.metin})-1;const ar=arMi(x.metin);
       return `<div class="ar-kart"><div class="bas"><a href="#" onclick="arastirmaAc(${s},${x.a});return false"><b>${s}:${x.a}</b></a><span class="kucuk">${esc(d.ad)}</span></div>
        <div class="kucuk" style="font-family:var(--ar-font);font-size:20px;direction:rtl;text-align:right">${esc((ay[x.a]||{}).arapca||"")}</div>
        <div class="kucuk" style="font-size:15px;margin:2px 0 6px">${esc(((ay[x.a]||{}).yalin||"").replace(/\[\d+\]/g,""))}</div>
-       <div class="ar-metin ${ar?"rtl":""} ${x.metin.length>1400?"kisa":""}" id="amm${j}">${esc(x.metin)}</div>
-       <div class="ar-eylem">${x.metin.length>1400?`<button onclick="this.textContent=document.getElementById('amm${j}').classList.toggle('kisa')?'▾ Devamını oku':'▴ Kısalt'">▾ Devamını oku</button>`:""}<button onclick="amKopyala(${j})">📋 Kopyala</button><button onclick="AM.a=${x.a};amNot(${j}).then(()=>AM.a=0)">✎ Not al</button><button onclick="amPaylas(${j})">↗ Paylaş</button></div></div>`}).join(""));
+       ${ayni?`<div class="kucuk"><i>Bu ayet, önceki ayetle birlikte açıklanmıştır.</i></div>`:`<div class="ar-metin ${ar?"rtl":""}" id="amm${j}">${esc(x.metin)}</div>`}
+       <div class="ar-eylem"><button onclick="amKopyala(${j})">📋 Kopyala</button><button onclick="AM.a=${x.a};amNot(${j}).then(()=>AM.a=0)">✎ Not al</button><button onclick="amPaylas(${j})">↗ Paylaş</button></div></div>`}).join(""));
     $("#saDaha")?.remove();
-    if(i<d.ayetler.length)k.insertAdjacentHTML("beforeend",`<p id="saDaha"><button class="btn ikincil" onclick="this.disabled=true;saDaha()">Devamını yükle (${d.ayetler.length-i} ayet kaldı)</button></p>`)};
+    if(i<d.ayetler.length){k.insertAdjacentHTML("beforeend",`<p id="saDaha" class="kucuk" style="text-align:center">${t("Yükleniyor…")} (${d.ayetler.length-i})</p>`);
+      const io=new IntersectionObserver(en=>{if(en[0].isIntersecting){io.disconnect();ekle()}},{root:$("#amGovde"),rootMargin:"1200px"});io.observe($("#saDaha"))}};
   window.saDaha=ekle;ekle()}
 async function saNotlar(s){const n=await api(`/api/notlar?s=${s}`);if(AM.s!==s||AM.a!==0)return;$("#amn-not").textContent=n.length||"";
   $("#amb-not").innerHTML=(n.length?n.map(x=>`<div class="not"><b>${x.a?`<a href="#" onclick="arastirmaAc(${s},${x.a});return false">${s}:${x.a}</a>`:"Sure geneli"}</b><div>${esc(x.metin).replace(/\n/g,"<br>")}</div></div>`).join(""):`<p class="kucuk">Bu surede henüz not yok.</p>`)+
@@ -521,7 +526,7 @@ async function arastirmaAc(s,a,bolum){
   if(!a)return sureArastirma(s,bolum);
   AM={s,a};AM_KAYIT.length=0;let o=$("#arastirma");if(!o){o=document.createElement("div");o.id="arastirma";document.body.appendChild(o)}
   o.style.display="flex";const n=D.sureler[s-1].ayet;
-  o.innerHTML=`<div class="ar-ust"><button class="btn ikincil" onclick="sureArastirma(${s},'ayetler')" title="Surenin tamamı">‹ ${esc(sureAdKisa(s))} ${t("sure")}</button><b>🔎 ${t("Araştır")}</b><span>${s}:${a}</span><span style="flex:1"></span>
+  o.innerHTML=`<div class="ar-ust"><button class="btn ikincil" onclick="sureArastirma(${s},'ayetler')" title="Surenin tamamı">‹ ${esc(sureAdKisa(s))} ${t("sure")}</button><b>🔎 ${t("Araştır")}</b>${sureSecici(s)}<select class="sa-sec" onchange="arastirmaAc(${s},+this.value)">${Array.from({length:D.sureler[s-1].ayet},(_,i)=>`<option value="${i+1}" ${i+1===a?"selected":""}>${s}:${i+1}</option>`).join("")}</select><span style="flex:1"></span>
     <button class="btn ikincil" ${a<=1?"disabled":""} onclick="arastirmaAc(${s},${a-1})" title="Önceki ayet (←)">‹</button><button class="btn ikincil" ${a>=n?"disabled":""} onclick="arastirmaAc(${s},${a+1})" title="Sonraki ayet (→)">›</button>
     <button class="btn ikincil" onclick="G.arastirma_boy=Math.max(70,(G.arastirma_boy||100)-10);gorunumUygula()">A−</button><button class="btn ikincil" onclick="G.arastirma_boy=Math.min(220,(G.arastirma_boy||100)+10);gorunumUygula()">A+</button>
     <button class="btn" onclick="arastirmaKapat()">✕</button></div>
