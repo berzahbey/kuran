@@ -394,6 +394,48 @@ def rivayet_cevir(d: dict = Body(...)):
     with V._kilit: c.execute("INSERT OR REPLACE INTO ceviri_onbellek VALUES(?,?)", (anahtar, t)); c.commit()
     return {"metin": t}
 
+# ---------------- Sure araştırması ----------------
+@app.get("/api/tefsir-sure/{slug}/{s}")
+def tefsir_sure(slug: str, s: int):
+    """Bir tefsirin bütün sure metni, ayet ayet."""
+    V.tefsir_sure_yukle(c, slug, s)
+    k = tek("SELECT * FROM tefsir_kaynak WHERE slug=?", slug) or {}
+    return {**tefsir_meta(slug, k), "ayetler": [{"a": r["a"], "metin": V.ac(r["metin"])} for r in satirlar("SELECT a, metin FROM tefsir WHERE slug=? AND s=? ORDER BY a", slug, s)]}
+
+_sure_ozet_onb = {}
+@app.get("/api/sure/{s}/arastirma")
+def sure_arastirma(s: int):
+    """Sure araştırması için özet: tefsir listesi, ayet ayet hadis/rivayet/görüş/not sayıları, görüş özetleri."""
+    tefsir_sure_hazirla(s)
+    kay = {r["slug"]: r for r in satirlar("SELECT * FROM tefsir_kaynak")}
+    tefs = []
+    for r in satirlar("SELECT slug, count(*) n FROM tefsir WHERE s=? GROUP BY slug", s):
+        m = tefsir_meta(r["slug"], kay.get(r["slug"], {})); m["ayet_sayisi"] = r["n"]; tefs.append(m)
+    tefs.sort(key=lambda x: (x["yil"], x["ad"]))
+    n = V.AYET_SAYILARI[s - 1]
+    ayet = {a: {"a": a, "hadis": 0, "rivayet": 0, "not": 0, "onem": 0} for a in range(1, n + 1)}
+    for r in satirlar("SELECT a, count(*) k FROM hadis_ayet WHERE s=? GROUP BY a", s): ayet[r["a"]]["hadis"] = r["k"]
+    for r in satirlar("SELECT a, count(*) k FROM notlar WHERE s=? AND a>0 GROUP BY a", s): ayet[r["a"]]["not"] = r["k"]
+    gorus = []
+    for r in satirlar("SELECT a, metin FROM analiz WHERE s=? AND tur='gorus_json' ORDER BY a", s):
+        try: g = json.loads(r["metin"])
+        except Exception: continue
+        ayet[r["a"]]["onem"] = int(g.get("onem") or 0)
+        gorus.append({"a": r["a"], "onem": int(g.get("onem") or 0), "ozet": g.get("ozet", ""),
+                      "kelimeler": [k.get("kelime", "") + (" — " + k.get("mesele", "") if k.get("mesele") else "") for k in g.get("kelimeler", [])]})
+    if s not in _sure_ozet_onb:
+        say = {}
+        for slug, _ in RIVAYET_KAYNAK:
+            for r in satirlar("SELECT a, metin FROM tefsir WHERE slug=? AND s=?", slug, s):
+                say[r["a"]] = say.get(r["a"], 0) + len(rivayet_bol(slug, V.ac(r["metin"])))
+        _sure_ozet_onb[s] = say
+    for a_, k in _sure_ozet_onb[s].items():
+        if a_ in ayet: ayet[a_]["rivayet"] = k
+    bilgi = tek("SELECT * FROM sure_bilgi WHERE s=?", s) or {}
+    return {"s": s, "ad": V.SURE_ADLARI[s - 1], "ad_ar": bilgi.get("ad_ar", ""), "nuzul": bilgi.get("nuzul"), "sira": V.NUZUL_SIRASI[s - 1],
+            "ayet_sayisi": n, "tefsirler": tefs, "ayetler": list(ayet.values()), "gorusler": gorus,
+            "analiz_edilen": len(gorus)}
+
 # ---------------- Hadisler ----------------
 @app.get("/api/ayet/{s}/{a}/hadisler")
 def hadisler(s: int, a: int):
