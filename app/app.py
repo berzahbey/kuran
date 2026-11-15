@@ -528,19 +528,49 @@ def lane_turkce(kok: str):
     return {"metin": t}
 
 # ---------------- Arama ----------------
+_ARA_HARF = str.maketrans({"I": "ı", "İ": "i", "Â": "a", "â": "a", "Î": "i", "î": "i", "Û": "u", "û": "u", "Ô": "o", "ô": "o", "’": "'", "‘": "'"})
+def _tr_norm(t):
+    """Harf sayısını koruyan arama biçimi: Türkçe küçük harf, şapkasız."""
+    return "".join(ch.translate(_ARA_HARF).lower()[:1] or ch for ch in t)
+
+def _isaretle(metin, norm_metin, q):
+    """Eşleşmeleri [[metin, işaretli_mi], ...] parçalarına böler."""
+    out, i = [], 0
+    for m in re.finditer(q if isinstance(q, re.Pattern) else re.escape(q), norm_metin):
+        if m.start() > i: out.append([metin[i:m.start()], 0])
+        out.append([metin[m.start():m.end()], 1]); i = m.end()
+    if i < len(metin): out.append([metin[i:], 0])
+    return out
+
+_ara_onb = {}
 @app.get("/api/ara")
-def ara(q: str, meal: str = VARSAYILAN_MEAL, limit: int = 200):
-    if re.search(r"[؀-ۿ]", q):
+def ara(q: str, meal: str = "", limit: int = 1000):
+    """Zahir'in mealinde (Türkçe/Osmanlıca), Arapça ayet metninde ve seçili karşılaştırma mealinde arar."""
+    q = q.strip()
+    if len(q) < 2: raise HTTPException(400, "En az iki harf yazın.")
+    sonuc, gorulen = [], set()
+    def ekle(s, a, metin, parcalar, kaynak):
+        if (s, a, kaynak) in gorulen or len(sonuc) >= limit: return
+        gorulen.add((s, a, kaynak)); sonuc.append({"s": s, "a": a, "sure": V.SURE_ADLARI[s - 1], "metin": metin, "parcalar": parcalar, "kaynak": kaynak})
+    if re.search(r"[\u0600-\u06FF]", q):
         qs = V.sadelestir(q)
-        r = [x for x in satirlar("SELECT s, a, metin FROM ayet WHERE kaynak='ara-quranuthmanihaf'") if qs in V.sadelestir(x["metin"])][:limit]
+        for x in satirlar("SELECT s, a, metin FROM ayet WHERE kaynak='ara-quranuthmanihaf' ORDER BY s, a"):
+            if qs in V.sadelestir(x["metin"]): ekle(x["s"], x["a"], x["metin"], [[x["metin"], 0]], "Arapça")
+        for x in satirlar("SELECT s, a, metin FROM meal WHERE id=? ORDER BY s, a", TEMEL_MEAL + "-osm"):
+            n = V.sadelestir(x["metin"])
+            if qs in n: ekle(x["s"], x["a"], x["metin"], [[x["metin"], 0]], "Osmanlıca")
     else:
-        r = satirlar("SELECT s, a, metin FROM yalin_meal WHERE metin LIKE ? ORDER BY s, a LIMIT ?", f"%{q}%", limit)
-        if meal:
-            gorulen = {(x["s"], x["a"]) for x in r}
-            r += [x for x in satirlar("SELECT s, a, metin FROM meal WHERE id=? AND metin LIKE ? ORDER BY s, a LIMIT ?", meal, f"%{q}%", limit)
-                  if (x["s"], x["a"]) not in gorulen]
-    for x in r: x["sure"] = V.SURE_ADLARI[x["s"] - 1]
-    return r
+        qn = _tr_norm(q)
+        kat = {"i": "[iı]", "ı": "[iı]", "o": "[oö]", "ö": "[oö]", "u": "[uü]", "ü": "[uü]", "c": "[cç]", "ç": "[cç]", "s": "[sş]", "ş": "[sş]", "g": "[gğ]", "ğ": "[gğ]"}
+        qn = re.compile("'?".join(kat.get(ch, re.escape(ch)) for ch in qn.replace("'", "")))   # Türkçe klavyesiz ve kesme işaretsiz de bulur
+        kaynaklar = [(TEMEL_MEAL, "Zahir'in meali")] + ([(meal, "Karşılaştırma")] if meal and meal != TEMEL_MEAL else [])
+        for mid, ad in kaynaklar:
+            for x in satirlar("SELECT s, a, metin FROM meal WHERE id=? ORDER BY s, a", mid):
+                if x["metin"] == RESIM: continue
+                n = _tr_norm(x["metin"])
+                if qn.search(n): ekle(x["s"], x["a"], x["metin"], _isaretle(x["metin"], n, qn), ad)
+    sonuc.sort(key=lambda x: (x["s"], x["a"]))
+    return sonuc
 
 # ---------------- Kaynak durumu / toplu indirme ----------------
 _kurulum = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "kurulum.log")}

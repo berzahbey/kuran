@@ -25,6 +25,10 @@ body.tema-siyah{--bg:#000;--kart:#0d0d0d;--yazi:#d8d8d8;--soluk:#8c8c8c;--cizgi:
 body.tema-koyu a,body.tema-siyah a{color:#7cc4ad}
 nav#sureler input{background:var(--kart);color:var(--yazi)}
 body.tema-koyu img.ayet-resim,body.tema-siyah img.ayet-resim{filter:invert(.9) hue-rotate(180deg)}
+.ara-sure{margin-top:16px}.ara-baslik{display:flex;gap:10px;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--vurgu);padding-bottom:4px;position:sticky;top:-18px;background:var(--kart);z-index:2}
+.ara-ayet{cursor:pointer;padding:7px 4px;font-family:var(--tr-font);font-size:16px;line-height:1.6}.ara-ayet:hover{background:var(--vurgu2)}
+.ara-ar{font-family:var(--osm-font);font-size:21px;line-height:2}
+mark{background:#ffe08a;color:inherit;border-radius:2px;padding:0 1px}
 .gorunum-satir{display:grid;grid-template-columns:110px minmax(120px,1fr) minmax(120px,1fr) 46px 150px;gap:10px;align-items:center;margin:10px 0}
 .gorunum-satir select,.gorunum-satir input[type=range]{width:100%}
 .tema-sec{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
@@ -435,9 +439,17 @@ function sayfaGoster(mid,n){modalAc(`<h3 style="margin-top:0">Kitabın aslı · 
 // ---- Arama ----
 $("#ara").onkeydown=async e=>{if(e.key!=="Enter")return;const q=e.target.value.trim();if(!q)return;
   const m=q.match(/^(\d+)[:. ](\d+)$/); if(m)return sureAc(+m[1],+m[2]); if(/^\d+$/.test(q))return sureAc(+q);
-  modalAc('<div class="yukleniyor">Aranıyor…</div>');const r=await api(`/api/ara?q=${encodeURIComponent(q)}&meal=${D.meal}`);
-  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi");
-  modalAc(`<h2 style="margin-top:0">“${esc(q)}” — ${r.length} sonuç</h2>`+r.map(x=>`<div class="oge" style="cursor:pointer" onclick="modalKapat();sureAc(${x.s},${x.a})"><b>${esc(x.sure)} ${x.s}:${x.a}</b><div class="${AR.test(x.metin)?"rtl":""}">${AR.test(q)?esc(x.metin):esc(x.metin).replace(re,m=>"<mark>"+m+"</mark>")}</div></div>`).join(""))};
+  aramaGoster(q)};
+async function aramaGoster(q){
+  modalAc('<div class="yukleniyor">Aranıyor…</div>');let r;try{r=await api(`/api/ara?q=${encodeURIComponent(q)}&meal=${D.meal||""}`)}catch(e){modalAc(`<p>${esc(e.message)}</p>`);return}
+  const gr={};r.forEach(x=>(gr[x.s]=gr[x.s]||[]).push(x));const sureler=Object.keys(gr).map(Number).sort((a,b)=>a-b);
+  const par=x=>x.parcalar.map(([t,m])=>m?`<mark>${esc(t)}</mark>`:esc(t)).join("");
+  modalAc(`<h2 style="margin-top:0">“${esc(q)}”</h2><p class="kucuk">${r.length} ayet · ${sureler.length} sure${r.length>=1000?" (ilk 1000 sonuç)":""}</p>
+   ${r.length?`<div class="cipler">${sureler.map(s=>`<a href="#ara-${s}" class="cip" onclick="document.getElementById('ara-${s}').scrollIntoView();return false">${esc(D.sureler[s-1].ad)} (${gr[s].length})</a>`).join("")}</div>`:"<p>Sonuç bulunamadı.</p>"}
+   ${sureler.map(s=>`<div class="ara-sure" id="ara-${s}"><div class="ara-baslik"><b>${s}. ${esc(D.sureler[s-1].ad)} Sûresi</b> <span class="kucuk">${gr[s].length} ayet</span>
+     <a href="#" onclick="modalKapat();sureAc(${s});return false">Surenin tamamı ›</a></div>
+     ${gr[s].map(x=>`<div class="oge ara-ayet" onclick="modalKapat();sureAc(${x.s},${x.a})"><span class="kucuk">${x.s}:${x.a}${x.kaynak!=="Zahir'in meali"?" · "+esc(x.kaynak):""}</span>
+       <div class="${AR.test(x.metin)?"rtl ara-ar":""}">${par(x)}</div></div>`).join("")}</div>`).join("")}`)}
 document.addEventListener("keydown",e=>{if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT")return;
   if(e.key==="Escape")modalKapat(); if(D.a&&e.key==="ArrowDown"){e.preventDefault();ayetSec(D.s,Math.min(D.sureler[D.s-1].ayet,D.a+1));document.getElementById("ay"+D.a)?.scrollIntoView({block:"center"})}
   if(D.a&&e.key==="ArrowUp"){e.preventDefault();ayetSec(D.s,Math.max(1,D.a-1));document.getElementById("ay"+D.a)?.scrollIntoView({block:"center"})}});
