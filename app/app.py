@@ -206,16 +206,18 @@ def temel_dipnot(s, a=None):
     return d
 
 @app.get("/api/sure/{s}")
-def sure(s: int, meal: str = ""):
-    """Okuma görünümü: Arapça + yalın meal (ana metin). meal verilirse karşılaştırma meali de eklenir."""
+def sure(s: int, meal: str = "", ana: str = ""):
+    """Okuma görünümü: Arapça + ana metin (Zahir'in meali; ana= verilirse o meal, ör. Hollandaca). meal verilirse karşılaştırma meali de eklenir."""
     V.arapca_yukle(c)
     if meal: V.meal_sure_yukle(c, meal, s)
+    if ana and ana != TEMEL_MEAL: V.meal_sure_yukle(c, ana, s)
+    else: ana = ""
     ar = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM ayet WHERE s=? AND kaynak='ara-quranuthmanihaf'", s)}
     ml = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", meal, s)} if meal else {}
-    yl = {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum, metin_osm, dipnotlar_osm FROM yalin_meal WHERE s=?", s)}
-    tm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL, s)}
-    tm_osm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL + "-osm", s)}
-    tdn = temel_dipnot(s)
+    yl = {} if ana else {r["a"]: r for r in satirlar("SELECT a, metin, dipnotlar, durum, metin_osm, dipnotlar_osm FROM yalin_meal WHERE s=?", s)}
+    tm = {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", ana or TEMEL_MEAL, s)}
+    tm_osm = {} if ana else {r["a"]: r["metin"] for r in satirlar("SELECT a, metin FROM meal WHERE id=? AND s=?", TEMEL_MEAL + "-osm", s)}
+    tdn = {} if ana else temel_dipnot(s)
     for a in range(1, V.AYET_SAYILARI[s - 1] + 1):
         if a not in yl:
             if a in tm: yl[a] = {"metin": tm[a], "dipnotlar": tdn.get(a, ["[]"])[0], "durum": "temel", "metin_osm": tm_osm.get(a), "dipnotlar_osm": tdn.get(a, ["[]", "[]"])[1]}
@@ -233,7 +235,7 @@ def sure(s: int, meal: str = ""):
          "yalin_durum": (yl.get(a) or {}).get("durum"), "not": ns.get(a, 0)} for a in range(1, V.AYET_SAYILARI[s - 1] + 1)]}
 
 @app.get("/api/ayet/{s}/{a}")
-def ayet(s: int, a: int):
+def ayet(s: int, a: int, ana: str = ""):
     hafs = tek("SELECT metin FROM ayet WHERE s=? AND a=? AND kaynak='ara-quranuthmanihaf'", s, a)
     kir = satirlar("SELECT kaynak, metin FROM ayet WHERE s=? AND a=? AND kaynak LIKE 'ara-quran%' AND kaynak NOT IN ('ara-quransimple')", s, a)
     hafs_sade = V.sadelestir(hafs["metin"]) if hafs else ""
@@ -252,7 +254,8 @@ def ayet(s: int, a: int):
             w["lane_var"] = V.lane_bul(c, w["kok"]) is not None
     return {"s": s, "a": a, "sure": V.SURE_ADLARI[s - 1], "arapca": hafs["metin"] if hafs else "", "kiraat": kiraat,
             "kelimeler": list(kelimeler.values()),
-            "yalin": tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a) or
+            "yalin": ({"metin": (tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", ana, s, a) or {}).get("metin", ""), "dipnotlar": "[]", "durum": "temel"} if ana and ana != TEMEL_MEAL and (V.meal_sure_yukle(c, ana, s) or True) else None) or
+                     tek("SELECT * FROM yalin_meal WHERE s=? AND a=?", s, a) or
                      ({"metin": r["metin"], "dipnotlar": temel_dipnot(s, a).get(a, ["[]"])[0], "durum": "temel", "metin_osm": (tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL + "-osm", s, a) or {}).get("metin"), "dipnotlar_osm": temel_dipnot(s, a).get(a, ["[]", "[]"])[1]}
                       if (r := tek("SELECT metin FROM meal WHERE id=? AND s=? AND a=?", TEMEL_MEAL, s, a)) else None),
             "notlar": satirlar("SELECT * FROM notlar WHERE s=? AND a=? ORDER BY id DESC", s, a)}
@@ -545,7 +548,7 @@ def _isaretle(metin, norm_metin, q):
 
 _ara_onb = {}
 @app.get("/api/ara")
-def ara(q: str, meal: str = "", limit: int = 1000):
+def ara(q: str, meal: str = "", ana: str = "", limit: int = 1000):
     """Zahir'in mealinde (Türkçe/Osmanlıca), Arapça ayet metninde ve seçili karşılaştırma mealinde arar."""
     q = q.strip()
     if len(q) < 2: raise HTTPException(400, "En az iki harf yazın.")
@@ -561,14 +564,16 @@ def ara(q: str, meal: str = "", limit: int = 1000):
             n = V.sadelestir(x["metin"])
             if qs in n: ekle(x["s"], x["a"], x["metin"], [[x["metin"], 0]], "Osmanlıca")
     else:
-        qn = _tr_norm(q)
+        qn = _tr_norm(q) if not ana or ana == TEMEL_MEAL else q.lower()
         kat = {"i": "[iı]", "ı": "[iı]", "o": "[oö]", "ö": "[oö]", "u": "[uü]", "ü": "[uü]", "c": "[cç]", "ç": "[cç]", "s": "[sş]", "ş": "[sş]", "g": "[gğ]", "ğ": "[gğ]"}
         qn = re.compile("'?".join(kat.get(ch, re.escape(ch)) for ch in qn.replace("'", "")))   # Türkçe klavyesiz ve kesme işaretsiz de bulur
-        kaynaklar = [(TEMEL_MEAL, "Zahir'in meali")] + ([(meal, "Karşılaştırma")] if meal and meal != TEMEL_MEAL else [])
+        kaynaklar = [(ana or TEMEL_MEAL, "ana")] + ([(meal, "Karşılaştırma")] if meal and meal not in (TEMEL_MEAL, ana) else [])
+        for mid, _ in kaynaklar:
+            for s_ in range(1, 115): V.meal_sure_yukle(c, mid, s_)
         for mid, ad in kaynaklar:
             for x in satirlar("SELECT s, a, metin FROM meal WHERE id=? ORDER BY s, a", mid):
                 if x["metin"] == RESIM: continue
-                n = _tr_norm(x["metin"])
+                n = _tr_norm(x["metin"]) if mid in (TEMEL_MEAL,) or mid.startswith("tur-") else "".join(ch.lower()[:1] or ch for ch in x["metin"])
                 if qn.search(n): ekle(x["s"], x["a"], x["metin"], _isaretle(x["metin"], n, qn), ad)
     sonuc.sort(key=lambda x: (x["s"], x["a"]))
     return sonuc
