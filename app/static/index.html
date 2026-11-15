@@ -256,7 +256,7 @@ async function basla(){
   const ml=await api("/api/meal-kaynaklari"); MEAL_LISTE=ml; const sel=$("#mealSec");
   sel.innerHTML=`<option value="">${t("— yok —")}</option>`+ml.filter(m=>DILLER[m.dil]||m.dil===UI).sort((a,b)=>Object.keys(DILLER).indexOf(a.dil)-Object.keys(DILLER).indexOf(b.dil)).map(m=>`<option value="${m.id}">${esc(m.dil===(UI==="Turkish"?"Turkish":UI)?"":(UI==="Turkish"?DILLER[m.dil]:m.dil)+": ")}${esc(m.yazar)}</option>`).join("");
   sel.value=D.meal; sel.onchange=()=>{D.meal=sel.value;try{localStorage.setItem("karsilastir",D.meal)}catch(e){};if(D.s)sureAc(D.s,D.a)};
-  const h=location.hash.match(/(\d+)(?::(\d+))?/); sureAc(h?+h[1]:68,h&&h[2]?+h[2]:null);
+  const h=location.hash.match(/(\d+)(?::(\d+))?/); sureAc(h?+h[1]:1,h&&h[2]?+h[2]:null);
 }
 function sureListe(){
   const f=$("#sureFiltre").value.toLowerCase();
