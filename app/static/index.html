@@ -415,12 +415,17 @@ function gorusDuzMetin(g){const L=[];L.push(g.ozet||"");(g.kelimeler||[]).forEac
 
 
 // ---------- Sure araştırması ----------
+function amDilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a);
+  if(!AM)return;const y=$("#arastirma");const top=$("#amGovde")?.scrollTop||0;
+  if(AM.a){arastirmaAc(AM.s,AM.a)}else{const b=y.querySelector(".ar-ust button[onclick='amDilDegistir()']");if(b){b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}
+    saMealCiz(AM.s);saTefsirCiz(AM.s).then(()=>{})}}
+
 function sureSecici(s){return `<select class="sa-sec" onchange="sureArastirma(+this.value)" title="Sure seç">${D.sureler.map(x=>`<option value="${x.s}" ${x.s===s?"selected":""}>${x.s}. ${esc(sureAdKisa(x.s))}</option>`).join("")}</select>`}
 
 const SA={meal:null,tefsir:null,tefParca:0};
 async function sureArastirma(s,bolum){
   AM={s,a:0};AM_KAYIT.length=0;let o=$("#arastirma");if(!o){o=document.createElement("div");o.id="arastirma";document.body.appendChild(o)}o.style.display="flex";
-  o.innerHTML=`<div class="ar-ust"><b>🔎 ${t("Araştır")}</b>${sureSecici(s)}<span class="kucuk">${t("surenin tamamı")}</span><span style="flex:1"></span>
+  o.innerHTML=`<div class="ar-ust"><b>🔎 ${t("Araştır")}</b>${sureSecici(s)}<span class="kucuk">${t("surenin tamamı")}</span><span style="flex:1"></span>${UI==="Turkish"?`<button class="btn ikincil ${D.dil==="osm"?"acik":""}" onclick="amDilDegistir()" title="Meali Türkçe / Osmanlıca oku">${D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه"}</button>`:""}
     <button class="btn ikincil" ${s<=1?"disabled":""} onclick="sureArastirma(${s-1})" title="Önceki sure">‹</button><button class="btn ikincil" ${s>=114?"disabled":""} onclick="sureArastirma(${s+1})" title="Sonraki sure">›</button>
     <button class="btn ikincil" onclick="G.arastirma_boy=Math.max(70,(G.arastirma_boy||100)-10);gorunumUygula()">A−</button><button class="btn ikincil" onclick="G.arastirma_boy=Math.min(220,(G.arastirma_boy||100)+10);gorunumUygula()">A+</button>
     <button class="btn" onclick="arastirmaKapat()">✕</button></div>
@@ -467,7 +472,7 @@ async function saMealCiz(s){
   const ml=MEAL_LISTE.filter(m=>m.dil==="Turkish"||m.dil===UI||m.dil==="English"||m.dil==="Ottoman");
   const ana=anaMeal()||"";
   if(SA.meal===null)SA.meal=ana;
-  $("#ams-meal").innerHTML=`<select id="saMeal"><option value="${ana}">${UI==="Turkish"?"Türkçe meal":esc((MEAL_LISTE.find(m=>m.id===ana)||{}).yazar||"")}</option>${ml.filter(m=>m.id!==ana).map(m=>`<option value="${m.id}" ${m.id===SA.meal?"selected":""}>${esc((m.dil!==UI&&m.dil!=="Turkish"?m.dil+": ":"")+m.yazar)}</option>`).join("")}</select> <button class="btn ikincil" onclick="saMealKopyala()">📋 Tamamını kopyala</button>`;
+  $("#ams-meal").innerHTML=`<select id="saMeal"><option value="${ana}">${UI==="Turkish"?(D.dil==="osm"?"Osmanlıca":"Türkçe meal"):esc((MEAL_LISTE.find(m=>m.id===ana)||{}).yazar||"")}</option>${ml.filter(m=>m.id!==ana).map(m=>`<option value="${m.id}" ${m.id===SA.meal?"selected":""}>${esc((m.dil!==UI&&m.dil!=="Turkish"?m.dil+": ":"")+m.yazar)}</option>`).join("")}</select> <button class="btn ikincil" onclick="saMealKopyala()">📋 Tamamını kopyala</button>`;
   $("#saMeal").onchange=e=>{SA.meal=e.target.value;saMealCiz(s)};
   $("#amb-meal").innerHTML=t("Yükleniyor…");
   const d=await api(`/api/sure/${s}?meal=${SA.meal||""}&ana=${ana}`);if(AM.s!==s||AM.a!==0)return;
@@ -486,7 +491,7 @@ async function saTefsirCiz(s){
       const j=AM_KAYIT.push({baslik:`${d.ad} — ${s}:${x.a}`,metin:x.metin})-1;const ar=arMi(x.metin);
       return `<div class="ar-kart"><div class="bas"><a href="#" onclick="arastirmaAc(${s},${x.a});return false"><b>${s}:${x.a}</b></a><span class="kucuk">${esc(d.ad)}</span></div>
        <div class="kucuk" style="font-family:var(--ar-font);font-size:20px;direction:rtl;text-align:right">${esc((ay[x.a]||{}).arapca||"")}</div>
-       <div class="kucuk" style="font-size:15px;margin:2px 0 6px">${esc(((ay[x.a]||{}).yalin||"").replace(/\[\d+\]/g,""))}</div>
+       ${D.dil==="osm"&&(ay[x.a]||{}).yalin_osm?`<div style="font-family:var(--osm-font);font-size:calc(20px*var(--osm-boy));direction:rtl;text-align:right;margin:2px 0 6px;line-height:2">${esc(ay[x.a].yalin_osm.replace(/\[\d+\]/g,""))}</div>`:`<div class="kucuk" style="font-size:15px;margin:2px 0 6px">${esc(((ay[x.a]||{}).yalin||"").replace(/\[\d+\]/g,""))}</div>`}
        ${ayni?`<div class="kucuk"><i>Bu ayet, önceki ayetle birlikte açıklanmıştır.</i></div>`:`<div class="ar-metin ${ar?"rtl":""}" id="amm${j}">${esc(x.metin)}</div>`}
        <div class="ar-eylem"><button onclick="amKopyala(${j})">📋 Kopyala</button><button onclick="AM.a=${x.a};amNot(${j}).then(()=>AM.a=0)">✎ Not al</button><button onclick="amPaylas(${j})">↗ Paylaş</button></div></div>`}).join(""));
     $("#saDaha")?.remove();
@@ -526,7 +531,7 @@ async function arastirmaAc(s,a,bolum){
   if(!a)return sureArastirma(s,bolum);
   AM={s,a};AM_KAYIT.length=0;let o=$("#arastirma");if(!o){o=document.createElement("div");o.id="arastirma";document.body.appendChild(o)}
   o.style.display="flex";const n=D.sureler[s-1].ayet;
-  o.innerHTML=`<div class="ar-ust"><button class="btn ikincil" onclick="sureArastirma(${s},'ayetler')" title="Surenin tamamı">‹ ${esc(sureAdKisa(s))} ${t("sure")}</button><b>🔎 ${t("Araştır")}</b>${sureSecici(s)}<select class="sa-sec" onchange="arastirmaAc(${s},+this.value)">${Array.from({length:D.sureler[s-1].ayet},(_,i)=>`<option value="${i+1}" ${i+1===a?"selected":""}>${s}:${i+1}</option>`).join("")}</select><span style="flex:1"></span>
+  o.innerHTML=`<div class="ar-ust"><button class="btn ikincil" onclick="sureArastirma(${s},'ayetler')" title="Surenin tamamı">‹ ${esc(sureAdKisa(s))} ${t("sure")}</button><b>🔎 ${t("Araştır")}</b>${sureSecici(s)}<select class="sa-sec" onchange="arastirmaAc(${s},+this.value)">${Array.from({length:D.sureler[s-1].ayet},(_,i)=>`<option value="${i+1}" ${i+1===a?"selected":""}>${s}:${i+1}</option>`).join("")}</select><span style="flex:1"></span>${UI==="Turkish"?`<button class="btn ikincil ${D.dil==="osm"?"acik":""}" onclick="amDilDegistir()" title="Meali Türkçe / Osmanlıca oku">${D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه"}</button>`:""}
     <button class="btn ikincil" ${a<=1?"disabled":""} onclick="arastirmaAc(${s},${a-1})" title="Önceki ayet (←)">‹</button><button class="btn ikincil" ${a>=n?"disabled":""} onclick="arastirmaAc(${s},${a+1})" title="Sonraki ayet (→)">›</button>
     <button class="btn ikincil" onclick="G.arastirma_boy=Math.max(70,(G.arastirma_boy||100)-10);gorunumUygula()">A−</button><button class="btn ikincil" onclick="G.arastirma_boy=Math.min(220,(G.arastirma_boy||100)+10);gorunumUygula()">A+</button>
     <button class="btn" onclick="arastirmaKapat()">✕</button></div>
@@ -540,8 +545,8 @@ async function arastirmaAc(s,a,bolum){
   kos(async()=>{const ay=await api(`/api/ayet/${s}/${a}?ana=${anaMeal()}`);if(AM.s!==s||AM.a!==a)return;
     const y=ay.yalin||{};const osm=UI==="Turkish"&&y.metin_osm;
     $("#amb-ayet").innerHTML=`<div class="ar-kart"><div class="ar-metin rtl" style="font-size:calc(28px*var(--ar-boy))">${esc(ay.arapca)}</div></div>`+
-      (y.metin?amKart(UI==="Turkish"?"Türkçe meal":t("Ana meal"),"",y.metin.replace(/\[\d+\]/g,"")+(JSON.parse(y.dipnotlar||"[]").length?"\n\n"+JSON.parse(y.dipnotlar).map((d,i)=>`[${i+1}] ${d}`).join("\n"):""),{kisalt:false}):"")+
-      (osm?amKart("Osmanlıca","",y.metin_osm.replace(/\[\d+\]/g,""),{rtl:true,kisalt:false}):"");
+      (osm&&D.dil==="osm"?amKart("Osmanlıca","",y.metin_osm.replace(/\[\d+\]/g,""),{rtl:true,kisalt:false}):"")+(y.metin?amKart(UI==="Turkish"?"Türkçe meal":t("Ana meal"),"",y.metin.replace(/\[\d+\]/g,"")+(JSON.parse(y.dipnotlar||"[]").length?"\n\n"+JSON.parse(y.dipnotlar).map((d,i)=>`[${i+1}] ${d}`).join("\n"):""),{kisalt:false}):"")+
+      (osm&&D.dil!=="osm"?amKart("Osmanlıca","",y.metin_osm.replace(/\[\d+\]/g,""),{rtl:true,kisalt:false}):"");
     // kelimeler
     const kw=ay.kelimeler||[];say("kelime",kw.length);
     $("#amb-kelime").innerHTML=`<div class="kelimeler" style="display:flex;flex-wrap:wrap;gap:8px;direction:rtl">${kw.map(w=>`<div class="kelime"><div class="ar">${esc(w.form)}</div>${w.kok?`<div class="kucuk">${esc(w.kok.split("").join(" "))} · ${w.kok_sayisi} geçiş</div>`:""}${w.lemma?`<div class="kucuk">${esc(w.lemma)}</div>`:""}</div>`).join("")}</div><p class="kucuk">Kök ve lügat ayrıntısı için ayet panelindeki "Kelime & Lügat" sekmesine bakın.</p>`;
