@@ -277,6 +277,7 @@ function dipnotKapat(){document.querySelectorAll(".dn-pop").forEach(x=>x.remove(
 document.addEventListener("scroll",dipnotKapat,true);document.addEventListener("keydown",e=>{if(e.key==="Escape")dipnotKapat()});
 document.addEventListener("click",dipnotKapat);
 async function sureAc(s,a=null){
+  if(!a&&D.panelS&&D.panelS!==s){D.a=null;D.ayet=null;D.panelS=null;$("#panel").innerHTML="";panelKapat()}   // başka sureye geçince eski surenin ayet paneli kapanır
   D.s=s; sureListe(); $("#metin").innerHTML=`<div class="yukleniyor">${t("Yükleniyor…")}</div>`;
   const d=await api(`/api/sure/${s}?meal=${D.meal}&ana=${anaMeal()}`); const b=D.sureler[s-1]; const hazir=d.ayetler.filter(x=>x.yalin_durum==="onayli"||x.yalin_durum==="taslak").length; const onayli=d.ayetler.filter(x=>x.yalin_durum==="onayli").length;
   const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
@@ -293,7 +294,7 @@ async function sureAc(s,a=null){
 }
 
 async function ayetSec(s,a){
-  D.s=s;D.a=a; location.hash=`${s}:${a}`;
+  D.s=s;D.a=a;D.panelS=s; location.hash=`${s}:${a}`;
   document.querySelectorAll(".ayet.secili").forEach(e=>e.classList.remove("secili")); document.getElementById("ay"+a)?.classList.add("secili");
   $("#duzen").classList.remove("panel-kapali");
   if(a===0){ D.ayet=null; panelCiz(`<div class="baslik"><b>${s}. ${esc(D.sureler[s-1].ad)} Sûresi — genel notlar</b><button class="btn ikincil" onclick="panelKapat()">×</button></div>`); return notlarSekme(); }
