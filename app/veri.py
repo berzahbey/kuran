@@ -35,7 +35,7 @@ TEFSIR_BILGI = {
  "tafsir-ibn-juzay": (1340, "dirayet", "İbn Cüzey — et-Teshîl"), "al-bahr-al-muhit": (1344, "lugat", "Ebû Hayyân — el-Bahru'l-Muhît"),
  "tafsir-ibn-al-qayyim": (1350, "dirayet", "İbn Kayyim"), "al-dur-al-masun-lil-samin-al-halabi": (1355, "lugat", "Semîn el-Halebî — ed-Dürrü'l-Masûn"),
  "ar-tafsir-ibn-kathir": (1373, "rivayet", "İbn Kesîr"), "en-tafisr-ibn-kathir": (1373, "rivayet", "İbn Kesîr (İng.)"),
- "tr-tafsir-ibne-kathir": (1373, "rivayet", "İbn Kesîr (Türkçe — kaynakta yalnız ayet meali var)"), "ru-tafsir-ibne-kahtir": (1373, "rivayet", "İbn Kesîr (Rusça)"),
+ "tr-tafsir-ibne-kathir": (1373, "rivayet", "İbn Kesîr (Türkçe)"), "ru-tafsir-ibne-kahtir": (1373, "rivayet", "İbn Kesîr (Rusça)"),
  "ur-tafseer-ibn-e-kaseer": (1373, "rivayet", "İbn Kesîr (Urduca)"), "tafseer-ibn-e-kaseer-urdu": (1373, "rivayet", "İbn Kesîr (Urduca)"),
  "bn-tafseer-ibn-e-kaseer": (1373, "rivayet", "İbn Kesîr (Bengalce)"),
  "al-nashr-li-ibn-al-jazari": (1429, "kiraat", "İbnü'l-Cezerî — en-Neşr"), "ar-tafsir-al-tha-alibi": (1471, "rivayet", "Seâlibî — el-Cevâhir"),
