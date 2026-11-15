@@ -65,7 +65,7 @@ body.odak header{display:none}
 body.odak .duzen{display:block;height:100vh}body.odak main#metin{height:100vh}
 body.odak nav#sureler,body.odak aside#panel{display:none}
 .odak-cik{display:none;position:fixed;top:10px;right:14px;z-index:30;opacity:.35;transition:opacity .2s}
-body.odak .odak-cik{display:block}.odak-cik:hover{opacity:1}
+body.odak .odak-cik{display:block}.odak-cik .acik{background:var(--vurgu);color:#fff}.odak-cik:hover{opacity:1}
 .sure-baslik{text-align:center;margin:6px 0 18px}
 .sure-baslik .ar{font-family:var(--ar-font);font-size:30px}
 .sure-baslik h2{margin:2px 0;font-size:20px}
@@ -206,7 +206,7 @@ mark{background:#ffe9a8}
 <div class="duzen panel-kapali" id="duzen">
   <nav id="sureler"><input id="sureFiltre" placeholder="Sure ara…"><div id="sureListe"></div></nav>
   <main id="metin"><div class="bos">Soldan bir sure seçin.</div></main>
-  <div class="odak-cik"><button class="btn ikincil" onclick="odakBoy(-10)" title="Yazıyı küçült">A−</button> <button class="btn ikincil" onclick="odakBoy(10)" title="Yazıyı büyüt">A+</button> <button class="btn ikincil" onclick="ayarlarAc('gorunum')" title="Tema, yazı tipi, renk ve sayfa ayarları">Aa</button> <button class="btn ikincil" id="odakDil" onclick="dilDegistir()" title="Türkçe ⇄ Osmanlıca (O tuşu)">Türkçe ⇄ عثمانلیجه</button> <button class="btn ikincil" id="odakCik" onclick="odak(false)" title="Okuma modundan çık (Esc)">✕ Okuma modu</button></div>
+  <div class="odak-cik"><button class="btn ikincil" onclick="odakBoy(-10)" title="Yazıyı küçült">A−</button> <button class="btn ikincil" onclick="odakBoy(10)" title="Yazıyı büyüt">A+</button> <button class="btn ikincil" onclick="ayarlarAc('gorunum')" title="Tema, yazı tipi, renk ve sayfa ayarları">Aa</button> <button class="btn ikincil" id="odakAr" onclick="arapcaDegistir()" title="Arapça aslını göster/gizle (A tuşu)">ع Arapça</button> <button class="btn ikincil" id="odakDil" onclick="dilDegistir()" title="Türkçe ⇄ Osmanlıca (O tuşu)">Türkçe ⇄ عثمانلیجه</button> <button class="btn ikincil" id="odakCik" onclick="odak(false)" title="Okuma modundan çık (Esc)">✕ Okuma modu</button></div>
   <aside id="panel"></aside>
 </div>
 <div class="modal-arka" id="modalArka" onclick="if(event.target===this)modalKapat()"><div class="modal"><button class="kapat" onclick="modalKapat()">×</button><div id="modalIcerik"></div></div></div>
@@ -243,11 +243,11 @@ function okunanAyet(){const m=$("#metin"),ust=m.getBoundingClientRect().top;for(
 function dilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,$("#duzen").classList.contains("panel-kapali")?null:D.a,okunanAyet())}
 function dilUygula(){for(const b of [$("#dilDugme"),$("#odakDil")]){if(!b)continue;b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}}
 function arapcaDegistir(){D.arapca=!D.arapca;try{localStorage.setItem("arapca",D.arapca?"1":"0")}catch(e){};arapcaUygula()}
-function arapcaUygula(){document.body.classList.toggle("arapca-gizli",!D.arapca);$("#arDugme").classList.toggle("acik",D.arapca)}
+function arapcaUygula(){document.body.classList.toggle("arapca-gizli",!D.arapca);$("#arDugme").classList.toggle("acik",D.arapca);$("#odakAr")?.classList.toggle("acik",D.arapca)}
 function arayuzDili(){
   if(UI!=="Turkish")D.dil="tr";
   $("#ara").placeholder=t("Ara: Arapça veya Türkçe (örn. القلم, sabır)…");$(".etiket-yazi").textContent=t("Karşılaştır: ");
-  $("#dilDugme").style.display=UI==="Turkish"?"":"none";$("#arDugme").textContent=t("ع Arapça");
+  $("#dilDugme").style.display=UI==="Turkish"?"":"none";$("#arDugme").textContent=t("ع Arapça");$("#odakAr").textContent=t("ع Arapça");
   document.querySelectorAll("header button").forEach(b=>{const k=b.dataset.t||(b.dataset.t=b.textContent.trim());if(["Notlarım","E-Kitap","⚙ Ayarlar"].includes(k))b.textContent=t(k)});
   $("#sureFiltre").placeholder=t("Sure ara…");$("#odakCik").textContent=t("✕ Okuma modu");$("#odakCik").title=t("Okuma modundan çık (Esc)");$("#odakDil").style.display=UI==="Turkish"?"":"none";
   const bos=$("#metin .bos");if(bos)bos.textContent=t("Soldan bir sure seçin.");document.documentElement.lang={Turkish:"tr",Dutch:"nl",English:"en"}[UI]||"en"}
@@ -813,7 +813,7 @@ function odakBoy(d){const k=UI==="Turkish"&&D.dil==="osm"?"osm_boy":"tr_boy";G[k
 function odak(ac){document.body.classList.toggle("odak",ac);try{localStorage.setItem("odak",ac?"1":"")}catch(e){}}
 try{if(localStorage.getItem("odak"))document.body.classList.add("odak")}catch(e){}
 document.addEventListener("keydown",e=>{if(!document.body.classList.contains("odak")||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
-  if(e.key==="Escape"){if($("#modalArka").style.display!=="flex")odak(false)} else if((e.key==="o"||e.key==="O")&&UI==="Turkish")dilDegistir(); else if(e.key==="ArrowRight"&&D.s<114)sureAc(D.s+1); else if(e.key==="ArrowLeft"&&D.s>1)sureAc(D.s-1)});
+  if(e.key==="Escape"){if($("#modalArka").style.display!=="flex")odak(false)} else if((e.key==="o"||e.key==="O")&&UI==="Turkish")dilDegistir(); else if(e.key==="a"||e.key==="A")arapcaDegistir(); else if(e.key==="ArrowRight"&&D.s<114)sureAc(D.s+1); else if(e.key==="ArrowLeft"&&D.s>1)sureAc(D.s-1)});
 function ayarlarAc(b="gorunum"){
   const acik=$("#ayarGovde")&&$("#modalArka").style.display==="flex";
   if(!acik)modalAc(`<h2 style="margin-top:0">${t("Ayarlar")}</h2><div class="sekmeler" id="ayarSekme"><button data-b="gorunum" onclick="ayarlarAc('gorunum')">${t("Görünüm")}</button><button data-b="kaynak" onclick="ayarlarAc('kaynak')">${t("Kaynaklar")}</button></div><div id="ayarGovde" style="border-top:2px solid var(--vurgu);padding-top:12px"></div>`);
