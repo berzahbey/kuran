@@ -36,6 +36,8 @@ def ilk_kurulum():
         with V._kilit:
             c.execute("DELETE FROM yalin_meal"); c.execute("INSERT OR REPLACE INTO durum(asama, bilgi) VALUES('yalin_kaldir','')"); c.commit()
     ozel_yukle(); osm_eksikleri_tamamla()
+    try: durum()   # Ayarlar > Kaynaklar sayıları önceden hazır olsun
+    except Exception: pass
     # tüm külliyat henüz inmediyse arka planda indirmeye başla
     if os.environ.get("KURAN_OTOMATIK_INDIR", "1") == "1" and not c.execute("SELECT 1 FROM durum WHERE asama='eslestir'").fetchone():
         kur_baslat()
@@ -546,9 +548,17 @@ _kurulum = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "kurul
 @app.get("/api/ayarlar")
 def ayarlar(): return {"yapay_zeka": yz.hazir(), **yz.bilgi()}
 
+_durum_onb = {}
+
 @app.get("/api/durum")
 def durum():
-    say = lambda t: c.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
+    import time as _t
+    if _durum_onb.get("t", 0) > _t.time() - (15 if (_kurulum["surec"] is not None and _kurulum["surec"].poll() is None) else 600):
+        say = lambda t: _durum_onb["say"][t]
+    else:
+        _durum_onb["say"] = {t: c.execute(f"SELECT count(*) FROM {t}").fetchone()[0] for t in
+                             ("ayet", "kelime", "lane", "meal_kaynak", "meal_sure", "tefsir_kaynak", "tefsir_sure", "hadis", "hadis_ayet", "notlar", "yalin_meal")}
+        _durum_onb["t"] = _t.time(); say = lambda t: _durum_onb["say"][t]
     calisiyor = _kurulum["surec"] is not None and _kurulum["surec"].poll() is None
     log = ""
     if os.path.exists(_kurulum["log"]): log = "".join(open(_kurulum["log"], encoding="utf-8").readlines()[-15:])

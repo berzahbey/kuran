@@ -12,7 +12,24 @@
 @font-face{font-family:"AmiriQuran";src:url(/static/font/AmiriQuran.ttf)}
 @font-face{font-family:"Amiri";src:url(/static/font/Amiri-Regular.ttf)}
 @font-face{font-family:"Amiri";font-weight:bold;src:url(/static/font/Amiri-Bold.ttf)}
-:root{--bg:#f7f5f0;--kart:#fff;--yazi:#1f2328;--soluk:#6b6f76;--cizgi:#e4e0d6;--vurgu:#1f6f5c;--vurgu2:#e8f2ee;--uyari:#a15c00;--sec:#fff7e0}
+@font-face{font-family:"Scheherazade New";src:url(/static/font/ScheherazadeNew-Regular.ttf)}
+@font-face{font-family:"Noto Naskh Arabic";src:url(/static/font/NotoNaskhArabic.ttf)}
+@font-face{font-family:"Lateef";src:url(/static/font/Lateef-Regular.ttf)}
+:root{--bg:#f7f5f0;--kart:#fff;--yazi:#1f2328;--soluk:#6b6f76;--cizgi:#e4e0d6;--cizgi2:#f0ede5;--vurgu:#1f6f5c;--vurgu2:#e8f2ee;--uyari:#a15c00;--sec:#fff7e0;--nav:#fbfaf6;--zemin2:#f1efe8;--notbg:#fffdf3;
+ --ar-font:AmiriQuran,Amiri,serif;--ar-boy:1;--ar-renk:inherit;--tr-font:Georgia,"Times New Roman",serif;--tr-boy:1;--tr-renk:inherit;--osm-font:Amiri,serif;--osm-boy:1;--osm-renk:inherit;--resim-boy:1}
+body.tema-sepya{--bg:#f4ecd8;--kart:#fbf5e6;--yazi:#5b4636;--soluk:#8a7560;--cizgi:#e2d5b8;--cizgi2:#ebe0c6;--vurgu2:#efe4c8;--sec:#f8ebc8;--nav:#efe5cc;--zemin2:#eadfc4;--notbg:#fdf7e7}
+body.tema-gri{--bg:#e6e6e3;--kart:#f3f3f1;--yazi:#26282b;--soluk:#62666b;--cizgi:#d2d2ce;--cizgi2:#dcdcd8;--vurgu2:#dde8e3;--sec:#f1ecd9;--nav:#ececea;--zemin2:#e0e0dc;--notbg:#f5f3ea}
+body.tema-yesil{--bg:#e3eedf;--kart:#f1f7ee;--yazi:#233423;--soluk:#5c705a;--cizgi:#cddfc6;--cizgi2:#d9e7d3;--vurgu2:#d6e8d8;--sec:#eef3d6;--nav:#e8f1e4;--zemin2:#d9e7d3;--notbg:#f4f8ec}
+body.tema-koyu{--bg:#1d1f22;--kart:#26292d;--yazi:#e2e2e0;--soluk:#9a9fa6;--cizgi:#3a3e44;--cizgi2:#30343a;--vurgu2:#24423a;--sec:#33302a;--nav:#212428;--zemin2:#30343a;--notbg:#2d2b25}
+body.tema-siyah{--bg:#000;--kart:#0d0d0d;--yazi:#d8d8d8;--soluk:#8c8c8c;--cizgi:#262626;--cizgi2:#1c1c1c;--vurgu2:#13302a;--sec:#1f1c14;--nav:#080808;--zemin2:#1c1c1c;--notbg:#151410}
+body.tema-koyu a,body.tema-siyah a{color:#7cc4ad}
+nav#sureler input{background:var(--kart);color:var(--yazi)}
+body.tema-koyu img.ayet-resim,body.tema-siyah img.ayet-resim{filter:invert(.9) hue-rotate(180deg)}
+.gorunum-satir{display:grid;grid-template-columns:110px minmax(120px,1fr) minmax(120px,1fr) 46px 150px;gap:10px;align-items:center;margin:10px 0}
+.gorunum-satir select,.gorunum-satir input[type=range]{width:100%}
+.tema-sec{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.tema-sec button{width:74px;height:44px;border-radius:8px;border:2px solid transparent;cursor:pointer;font-size:12px}
+.tema-sec button.aktif{border-color:var(--vurgu)}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--yazi);font-size:15px}
 header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--vurgu);color:#fff;position:sticky;top:0;z-index:20}
@@ -27,86 +44,96 @@ header button{white-space:nowrap;flex-shrink:0;background:rgba(255,255,255,.15);
 header button:hover{background:rgba(255,255,255,.28)}
 .duzen{display:grid;grid-template-columns:220px minmax(0,1fr) minmax(0,1.15fr);height:calc(100vh - 46px)}
 .duzen.panel-kapali{grid-template-columns:220px minmax(0,1fr) 0}
-nav#sureler{overflow:auto;border-right:1px solid var(--cizgi);background:#fbfaf6}
+nav#sureler{overflow:auto;border-right:1px solid var(--cizgi);background:var(--nav)}
 nav#sureler input{width:calc(100% - 16px);margin:8px;padding:6px;border:1px solid var(--cizgi);border-radius:6px}
-.sure-oge{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;cursor:pointer;border-bottom:1px solid #f0ede5}
+.sure-oge{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--cizgi2)}
 .sure-oge:hover{background:var(--vurgu2)}.sure-oge.secili{background:var(--vurgu);color:#fff}
 .sure-oge .ar{font-family:Amiri,serif;font-size:17px}
 .sure-oge small{color:var(--soluk);font-size:11px}.sure-oge.secili small{color:#dfe}
 .rozet{display:inline-block;font-size:10px;padding:1px 5px;border-radius:8px;background:var(--vurgu2);color:var(--vurgu);margin-left:3px}
-main#metin{overflow:auto;padding:16px 22px}
+main#metin{overflow:auto;padding:24px var(--kenar,28px) 60px;scroll-behavior:smooth}
+main#metin>*{max-width:var(--okuma-gen,720px);margin-left:auto;margin-right:auto}
+.okuma-nav{display:flex;justify-content:space-between;gap:10px;margin-top:34px;padding-top:14px;border-top:1px solid var(--cizgi)}
+.okuma-nav button{background:none;border:1px solid var(--cizgi);color:var(--yazi);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px}
+.okuma-nav button:hover{background:var(--vurgu2)}
+.odak-dugme{background:none;border:1px solid var(--cizgi);color:var(--soluk);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;margin-left:4px}
+body.odak header{display:none}
+body.odak .duzen{display:block;height:100vh}body.odak main#metin{height:100vh}
+body.odak nav#sureler,body.odak aside#panel{display:none}
+.odak-cik{display:none;position:fixed;top:10px;right:14px;z-index:30;opacity:.35}
+body.odak .odak-cik{display:block}.odak-cik:hover{opacity:1}
 .sure-baslik{text-align:center;margin:6px 0 18px}
-.sure-baslik .ar{font-family:AmiriQuran,Amiri,serif;font-size:30px}
+.sure-baslik .ar{font-family:var(--ar-font);font-size:30px}
 .sure-baslik h2{margin:2px 0;font-size:20px}
-.besmele{text-align:center;font-family:AmiriQuran,Amiri,serif;font-size:26px;margin-bottom:14px}
-.ayet{background:var(--kart);border:1px solid var(--cizgi);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:.1s}
-.ayet:hover{border-color:#b8d4ca}.ayet.secili{border-color:var(--vurgu);box-shadow:0 0 0 2px var(--vurgu2);background:var(--sec)}
-.ayet .ar{font-family:AmiriQuran,Amiri,serif;font-size:27px;line-height:2.15;direction:rtl;text-align:right}
+.besmele{text-align:center;font-family:var(--ar-font);font-size:calc(26px*var(--ar-boy));color:var(--ar-renk);margin-bottom:14px}
+.ayet{background:transparent;border:1px solid transparent;border-left:3px solid transparent;border-radius:6px;padding:8px 12px;margin-bottom:4px;cursor:pointer;transition:background .1s}
+.ayet:hover{background:color-mix(in srgb,var(--vurgu2) 45%,transparent)}.ayet.secili{border-left-color:var(--vurgu);background:var(--sec)}
+.ayet .ar{font-family:var(--ar-font);font-size:calc(27px*var(--ar-boy));color:var(--ar-renk);line-height:2.15;direction:rtl;text-align:right}
 body.arapca-gizli main .ayet .ar,body.arapca-gizli main .besmele{display:none}
 .sade-no{display:none;font-size:11px;color:#b5b0a4;margin-right:8px;font-family:system-ui;vertical-align:2px}
 body.arapca-gizli .sade-no{display:inline}
-body.arapca-gizli main .ayet{padding:9px 14px;margin-bottom:6px;border-color:transparent;background:transparent}
+body.arapca-gizli main .ayet{padding:5px 12px;margin-bottom:2px}
 body.arapca-gizli main .ayet:hover{background:var(--kart);border-color:var(--cizgi)}
 body.arapca-gizli main .ayet.secili{background:var(--sec);border-color:var(--vurgu)}
-body.arapca-gizli main .ayet .yalin{margin-top:0;font-size:18px}
+body.arapca-gizli main .ayet .yalin{margin-top:0;font-size:calc(18px*var(--tr-boy))}
 header button.acik{background:#fff;color:var(--vurgu)}
-.ayet .yalin.osm,.panel-meal .osm{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:22px;line-height:2.1}
-.panel-meal .osm{font-size:20px;margin-bottom:2px}
-body.arapca-gizli main .ayet .yalin.osm{font-size:24px;font-family:Amiri,serif}
+.ayet .yalin.osm,.panel-meal .osm{direction:rtl;text-align:right;font-family:var(--osm-font);font-size:calc(22px*var(--osm-boy));color:var(--osm-renk);line-height:2.1}
+.panel-meal .osm{font-size:calc(20px*var(--osm-boy));margin-bottom:2px}
+body.arapca-gizli main .ayet .yalin.osm{font-size:calc(24px*var(--osm-boy));font-family:var(--osm-font)}
 .ayet .yalin.osm .sade-no{float:right;margin:6px 0 0 8px;direction:ltr;font-family:system-ui}
 .dn-pop[dir=rtl]{font-family:Amiri,serif;font-size:18px;line-height:1.8;text-align:right}
 .osm-yok{font-size:11px;color:#b0a37a;font-style:italic;font-family:system-ui}
-.ayet .yalin{margin-top:6px;font-size:17px;line-height:1.55;font-family:Georgia,"Times New Roman",serif}
+.ayet .yalin{margin-top:4px;font-size:calc(17px*var(--tr-boy));line-height:var(--satir,1.7);text-align:var(--hiza,left);hyphens:auto;font-family:var(--tr-font);color:var(--tr-renk)}
 .ayet .yalin.eksik{color:#b0aca2;font-style:italic;font-size:14px;font-family:inherit}
 .besmele-sade{display:none;text-align:center;font-family:Georgia,serif;font-style:italic;color:var(--soluk);margin:0 0 16px}
-.besmele-sade.osm-b{font-family:Amiri,serif;font-style:normal;font-size:20px}
+.besmele-sade.osm-b{font-family:var(--osm-font);font-style:normal;font-size:20px}
 body.arapca-gizli main .besmele-sade{display:block}
-.besmele-tr.osm-b{font-family:Amiri,serif;font-style:normal;font-size:18px}
+.besmele-tr.osm-b{font-family:var(--osm-font);font-style:normal;font-size:18px}
 .besmele-tr{font-family:Georgia,serif;font-style:italic;font-size:14px;color:var(--soluk)}
 .duzenle{text-decoration:none;color:var(--soluk);font-size:14px;margin-left:4px}
 .inis-kutu{background:var(--vurgu2);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:14px}
 .inis-detay{margin-bottom:12px}.inis-detay summary{display:none}
-.panel-meal{font-family:Georgia,serif;font-size:16px;margin:2px 0 6px}
+.panel-meal{font-family:var(--tr-font);font-size:calc(16px*var(--tr-boy));color:var(--tr-renk);margin:2px 0 6px}
 button.dn{border:0;background:var(--vurgu);color:#fff;border-radius:9px;font-size:10.5px;line-height:1;padding:2px 5px;vertical-align:super;cursor:pointer;margin:0 1px;font-family:system-ui}
-.dn-pop{position:absolute;z-index:60;max-width:420px;background:#fffdf3;border:1px solid #e5d9a8;border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.15);font-size:14px;line-height:1.5}
+.dn-pop{position:absolute;z-index:60;max-width:420px;background:var(--notbg);color:var(--yazi);border:1px solid var(--cizgi);border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.15);font-size:14px;line-height:1.5}
 .ayet .meal.meal-rtl{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:19px;line-height:1.9}
 .ayet .meal.meal-rtl .kucuk{direction:ltr;display:inline-block;font-family:system-ui}
-.ayet-resim{display:block;max-width:100%;margin:4px 0 0 auto;border-radius:4px}
+.ayet-resim{display:block;max-width:100%;zoom:var(--resim-boy);margin:4px 0 0 auto;border-radius:4px}
 .ayet .meal{margin-top:6px;color:var(--soluk);font-size:14px;border-top:1px dashed var(--cizgi);padding-top:5px}
 .ayet .ust{display:flex;justify-content:space-between;font-size:12px;color:var(--soluk)}
 .no{font-family:AmiriQuran,Amiri,serif}
 aside#panel{overflow:auto;border-left:1px solid var(--cizgi);background:var(--kart);display:flex;flex-direction:column}
 .panel-ust{padding:10px 14px;border-bottom:1px solid var(--cizgi);position:sticky;top:0;background:var(--kart);z-index:5}
 .panel-ust .baslik{display:flex;justify-content:space-between;align-items:center}
-.panel-ust .ar{font-family:AmiriQuran,Amiri,serif;font-size:24px;direction:rtl;text-align:right;line-height:2;margin:4px 0}
+.panel-ust .ar{font-family:var(--ar-font);font-size:calc(24px*var(--ar-boy));color:var(--ar-renk);direction:rtl;text-align:right;line-height:2;margin:4px 0}
 .sekmeler{display:flex;gap:2px;flex-wrap:wrap;margin-top:6px}
-.sekmeler button{border:0;background:#f1efe8;padding:7px 12px;font-weight:500;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px}
+.sekmeler button{border:0;background:var(--zemin2);color:var(--yazi);padding:7px 12px;font-weight:500;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px}
 .sekmeler button.aktif{background:var(--vurgu);color:#fff}
 .icerik{padding:12px 14px}
 .kucuk{font-size:12px;color:var(--soluk)}
 .btn{background:var(--vurgu);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:14px}
-.btn.ikincil{background:#eceae3;color:var(--yazi)}.btn:disabled{opacity:.5;cursor:wait}
+.btn.ikincil{background:var(--zemin2);color:var(--yazi)}.btn:disabled{opacity:.5;cursor:wait}
 .kelimeler{display:flex;flex-wrap:wrap;gap:8px;direction:rtl}
-.kelime{border:1px solid var(--cizgi);border-radius:8px;padding:6px 8px;min-width:90px;text-align:center;direction:ltr;background:#fcfbf8}
-.kelime .ar{font-family:Amiri,serif;font-size:24px;direction:rtl}
+.kelime{border:1px solid var(--cizgi);border-radius:8px;padding:6px 8px;min-width:90px;text-align:center;direction:ltr;background:var(--kart)}
+.kelime .ar{font-family:var(--ar-font);font-size:calc(24px*var(--ar-boy));direction:rtl}
 .kelime .kok{font-family:Amiri,serif;font-size:18px;color:var(--vurgu);cursor:pointer;text-decoration:underline dotted}
 .kelime .etk{font-size:10.5px;color:var(--soluk);max-width:150px}
 .grup{margin-bottom:14px}.grup h4{margin:8px 0 4px;font-size:13px;color:var(--vurgu);text-transform:uppercase;letter-spacing:.04em}
-.oge{border-bottom:1px solid #f0ede5;padding:7px 0}
+.oge{border-bottom:1px solid var(--cizgi2);padding:7px 0}
 .oge b{font-size:13px}
 .rtl{direction:rtl;text-align:right;font-family:Amiri,serif;font-size:19px;line-height:1.9}
-.tefsir-metin{white-space:pre-wrap;max-height:60vh;overflow:auto;background:#fbfaf6;border:1px solid var(--cizgi);border-radius:6px;padding:10px;margin-top:6px}
+.tefsir-metin{white-space:pre-wrap;max-height:60vh;overflow:auto;background:var(--nav);border:1px solid var(--cizgi);border-radius:6px;padding:10px;margin-top:6px}
 .cipler{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.cip{border:1px solid var(--cizgi);background:#fff;border-radius:12px;padding:2px 9px;font-size:12px;cursor:pointer}
+.cip{border:1px solid var(--cizgi);background:var(--kart);color:var(--yazi);border-radius:12px;padding:2px 9px;font-size:12px;cursor:pointer}
 .cip.aktif{background:var(--vurgu);color:#fff;border-color:var(--vurgu)}
 .kiraat.farkli{background:#fff4e0;border-left:3px solid var(--uyari);padding-left:8px}
 textarea,input.tam{width:100%;padding:8px;border:1px solid var(--cizgi);border-radius:6px;font:inherit}
 textarea{min-height:80px}
-.not{background:#fffdf3;border:1px solid #efe6c4;border-radius:8px;padding:8px 10px;margin:8px 0}
+.not{background:var(--notbg);border:1px solid var(--cizgi);border-radius:8px;padding:8px 10px;margin:8px 0}
 .not .alt{display:flex;justify-content:space-between;font-size:11px;color:var(--soluk);margin-top:4px}
 .md h2{font-size:15px;color:var(--vurgu);margin:14px 0 4px}.md h3{font-size:14px;margin:10px 0 4px}.md ul{padding-left:20px;margin:4px 0}
 .modal-arka{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50}
-.modal{background:#fff;border-radius:12px;width:min(900px,94vw);max-height:88vh;overflow:auto;padding:18px 20px;position:relative}
+.modal{background:var(--kart);color:var(--yazi);border-radius:12px;width:min(900px,94vw);max-height:88vh;overflow:auto;padding:18px 20px;position:relative}
 .modal .kapat{position:absolute;right:12px;top:10px;border:0;background:none;font-size:22px;cursor:pointer}
 .lane{font-size:14px;line-height:1.6}.lane .ar{font-family:Amiri,serif;font-size:18px}
 .istat{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:10px 0}
@@ -129,11 +156,12 @@ mark{background:#ffe9a8}
   <button id="arDugme" onclick="arapcaDegistir()" title="Arapça aslını göster/gizle">ع Arapça</button>
   <button onclick="notlarAc()">Notlarım</button>
   <button onclick="kitapAc()">E-Kitap</button>
-  <button onclick="kaynakAc()">Kaynaklar</button>
+  <button onclick="ayarlarAc()" title="Görünüm ve kaynaklar">⚙ Ayarlar</button>
 </header>
 <div class="duzen panel-kapali" id="duzen">
   <nav id="sureler"><input id="sureFiltre" placeholder="Sure ara…"><div id="sureListe"></div></nav>
   <main id="metin"><div class="bos">Soldan bir sure seçin.</div></main>
+  <button class="btn ikincil odak-cik" onclick="odak(false)" title="Okuma modundan çık (Esc)">✕ Okuma modu</button>
   <aside id="panel"></aside>
 </div>
 <div class="modal-arka" id="modalArka" onclick="if(event.target===this)modalKapat()"><div class="modal"><button class="kapat" onclick="modalKapat()">×</button><div id="modalIcerik"></div></div></div>
@@ -183,13 +211,14 @@ async function sureAc(s,a=null){
   const d=await api(`/api/sure/${s}?meal=${D.meal}`); const b=D.sureler[s-1]; const hazir=d.ayetler.filter(x=>x.yalin_durum==="onayli"||x.yalin_durum==="taslak").length; const onayli=d.ayetler.filter(x=>x.yalin_durum==="onayli").length;
   const kars=D.meal?$("#mealSec").selectedOptions[0]?.textContent:"";
   $("#metin").innerHTML=`<div class="sure-baslik"><div class="ar">${esc(b.ad_ar)}</div><h2>${esc(d.ad)} Sûresi</h2>
-   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a></span></div>
+   <span class="kucuk">${s}. sure · ${b.nuzul==="Mecca"?"Mekkî":"Medenî"} · iniş sırası ${b.sira} · ${b.ayet} ayet · <a href="#" onclick="ayetSec(${s},0);return false">sure notları</a> <button class="odak-dugme" onclick="odak(!document.body.classList.contains('odak'))" title="Okuma modu: yalnız metin, tam ekran (Esc ile çıkış, ← → sure değiştirir)">⛶ Okuma modu</button></span></div>
    ${s!==1&&s!==9?`<div class="besmele">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ<div class="besmele-tr${D.dil==="osm"?" osm-b":""}">${D.dil==="osm"?"رحمان و رحیم اولان اللّهڭ اسمیله":"Rahmân ve Rahîm olan Allah'ın ismiyle"}</div></div><div class="besmele-sade${D.dil==="osm"?" osm-b":""}">${D.dil==="osm"?"رحمان و رحیم اولان اللّهڭ اسمیله":"Rahmân ve Rahîm olan Allah'ın ismiyle"}</div>`:""}`+
    d.ayetler.map(x=>`<div class="ayet" id="ay${x.a}" onclick="ayetSec(${s},${x.a})">
      <div class="ar">${esc(x.arapca)} <span class="no">﴿${arRakam(x.a)}﴾</span></div>
      ${x.yalin&&D.dil==="osm"?(x.yalin_osm?`<div class="yalin osm"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin_osm,x.dipnotlar_osm)}</div>`:`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}<div class="osm-yok">Osmanlıcası çeviricide hazırlanıyor</div></div>`):x.yalin?`<div class="yalin"><span class="sade-no">${x.a}</span>${dipnotluMetin(x.yalin,x.dipnotlar)}</div>`:(x.yalin_durum==="birlesik"?`<div class="yalin eksik"><span class="sade-no">${x.a}</span>↑ önceki ayetle birlikte çevrildi</div>`:`<div class="yalin eksik"><span class="sade-no">${x.a}</span>Yalın meal henüz hazırlanmadı.</div>`)}
      ${x.meal?`<div class="meal ${d.meal_yon==="rtl"?"meal-rtl":""}"><span class="kucuk">${esc(kars)}${d.meal_sayfa[x.a]?` · <a href="#" onclick="event.stopPropagation();sayfaGoster('${D.meal}',${d.meal_sayfa[x.a]});return false">s. ${d.meal_sayfa[x.a]}</a>`:""}:</span> ${d.meal_resim?`<img class="ayet-resim" src="${x.meal}" loading="lazy" alt="">`:esc(x.meal)}</div>`:""}
-     ${x.not?`<div class="ust"><span></span><span>✎ ${x.not} not</span></div>`:""}</div>`).join("");
+     ${x.not?`<div class="ust"><span></span><span>✎ ${x.not} not</span></div>`:""}</div>`).join("")+
+   `<div class="okuma-nav">${s>1?`<button onclick="sureAc(${s-1})">‹ ${esc(D.sureler[s-2].ad)}</button>`:"<span></span>"}${s<114?`<button onclick="sureAc(${s+1})">${esc(D.sureler[s].ad)} ›</button>`:"<span></span>"}</div>`;
   if(a){ayetSec(s,a);document.getElementById("ay"+a)?.scrollIntoView({block:"center"})} else $("#metin").scrollTop=0;
 }
 
@@ -395,7 +424,7 @@ async function kaynakAc(yenile=false){const d=await api("/api/durum");const y=(a
    <button class="btn" ${d.kurulum_calisiyor?"disabled":""} onclick="api('/api/kur',{method:'POST'}).then(()=>setTimeout(()=>kaynakAc(true),1500))">${d.kurulum_calisiyor?"İndiriliyor…":"Tüm kaynakları indir / güncelle"}</button>
    ${d.log?`<pre class="log">${esc(d.log)}</pre>`:""}`;
   if(yenile){const k=$("#kaynakGovde");if(k)k.innerHTML=govde;}
-  else{modalAc(`<h2 style="margin-top:0">Kaynaklar</h2><div id="kaynakGovde">${govde}</div>`);}
+  else{ayarlarAc("kaynak");return}
   if(d.kurulum_calisiyor)setTimeout(()=>{if($("#modalArka").style.display==="flex"&&$("#kaynakGovde"))kaynakAc(true)},4000)}
 
 
@@ -413,6 +442,46 @@ document.addEventListener("keydown",e=>{if(e.target.tagName==="TEXTAREA"||e.targ
   if(e.key==="Escape")modalKapat(); if(D.a&&e.key==="ArrowDown"){e.preventDefault();ayetSec(D.s,Math.min(D.sureler[D.s-1].ayet,D.a+1));document.getElementById("ay"+D.a)?.scrollIntoView({block:"center"})}
   if(D.a&&e.key==="ArrowUp"){e.preventDefault();ayetSec(D.s,Math.max(1,D.a-1));document.getElementById("ay"+D.a)?.scrollIntoView({block:"center"})}});
 basla();
+
+// ---------- Görünüm (tema, yazı tipi, boyut, renk) ----------
+const G_VARS={tema:"acik",taban:"",ar_font:"AmiriQuran",ar_boy:100,ar_renk:"",tr_font:"Georgia",tr_boy:100,tr_renk:"",osm_font:"Amiri",osm_boy:100,osm_renk:"",resim_boy:100,genislik:720,satir:170,kenar:28,hiza:"left"};
+const G_FONT={ar:[["AmiriQuran","Amiri Kur'an"],["Amiri","Amiri"],["Scheherazade New","Scheherazade"],["Noto Naskh Arabic","Noto Nesih"],["Lateef","Lateef"]],
+ osm:[["Amiri","Amiri"],["Scheherazade New","Scheherazade"],["Noto Naskh Arabic","Noto Nesih"],["Lateef","Lateef"]],
+ tr:[["Georgia","Georgia"],["Palatino Linotype","Palatino"],["Times New Roman","Times"],["system-ui","Sade (sans)"],["Verdana","Verdana"]]};
+const G_TEMA=[["acik","Açık","#f7f5f0","#1f2328"],["sepya","Sepya","#f4ecd8","#5b4636"],["gri","Gri","#e6e6e3","#26282b"],["yesil","Yeşil","#e3eedf","#233423"],["koyu","Koyu","#1d1f22","#e2e2e0"],["siyah","Siyah","#000","#d8d8d8"]];
+let G=(()=>{try{return Object.assign({},G_VARS,JSON.parse(localStorage.getItem("gorunum")||"{}"))}catch(e){return Object.assign({},G_VARS)}})();
+function gorunumUygula(){const r=document.documentElement.style,b=document.body;
+  G_TEMA.forEach(t=>b.classList.remove("tema-"+t[0])); if(G.tema!=="acik")b.classList.add("tema-"+G.tema);
+  const yedek={ar:"Amiri,serif",osm:"Amiri,serif",tr:"Georgia,serif"};
+  for(const d of ["ar","tr","osm"]){r.setProperty(`--${d}-font`,`"${G[d+"_font"]}",${yedek[d]}`);r.setProperty(`--${d}-boy`,G[d+"_boy"]/100);r.setProperty(`--${d}-renk`,G[d+"_renk"]||"inherit")}
+  r.setProperty("--resim-boy",G.resim_boy/100);r.setProperty("--okuma-gen",G.genislik+"px");r.setProperty("--satir",G.satir/100);r.setProperty("--kenar",G.kenar+"px");r.setProperty("--hiza",G.hiza);
+  if(G.taban){r.setProperty("--bg",G.taban);r.setProperty("--kart",G.taban)}else{r.removeProperty("--bg");r.removeProperty("--kart")}
+  try{localStorage.setItem("gorunum",JSON.stringify(G))}catch(e){}}
+function gorunumHtml(){
+  const satir=(d,ad)=>`<div class="gorunum-satir"><b>${ad}</b>
+    ${G_FONT[d]?`<select onchange="G.${d}_font=this.value;gorunumUygula()">${G_FONT[d].map(([v,t])=>`<option value="${v}" ${G[d+"_font"]===v?"selected":""}>${t}</option>`).join("")}</select>`:"<span></span>"}
+    <input type="range" min="70" max="200" step="5" value="${G[d+"_boy"]}" oninput="G.${d}_boy=+this.value;this.nextElementSibling.textContent=this.value+'%';gorunumUygula()"><span class="kucuk">${G[d+"_boy"]}%</span>
+    ${d!=="resim"?`<span><input type="color" title="Yazı rengi" value="${G[d+"_renk"]||"#1f2328"}" oninput="G.${d}_renk=this.value;gorunumUygula()"> <a href="#" class="kucuk" onclick="G.${d}_renk='';gorunumUygula();gorunumAc();return false">temaya göre</a></span>`:"<span></span>"}</div>`;
+  return `<b>Tema</b><div class="tema-sec">${G_TEMA.map(([k,t,bg,y])=>`<button class="${G.tema===k?"aktif":""}" style="background:${bg};color:${y}" onclick="G.tema='${k}';G.taban='';gorunumUygula();gorunumAc()">${t}</button>`).join("")}</div>
+   <p><b>Taban rengi</b> &nbsp;<input type="color" value="${G.taban||"#f7f5f0"}" oninput="G.taban=this.value;gorunumUygula()"> <a href="#" class="kucuk" onclick="G.taban='';gorunumUygula();gorunumAc();return false">temaya göre</a></p>
+   <div class="gorunum-satir kucuk" style="margin-bottom:0"><span></span><span>Yazı tipi</span><span>Büyüklük</span><span></span><span>Renk</span></div>
+   ${satir("ar","Arapça")}${satir("tr","Türkçe")}${satir("osm","Osmanlıca")}${satir("resim","Hayrat resmi")}
+   <hr style="border:0;border-top:1px solid var(--cizgi)"><b>Sayfa</b>
+   ${[["genislik","Satır genişliği",480,1200,20,"px"],["satir","Satır aralığı",120,260,5,"%"],["kenar","Kenar boşluğu",8,120,4,"px"]].map(([k,ad,mn,mx,st,b])=>`<div class="gorunum-satir"><span>${ad}</span><span></span><input type="range" min="${mn}" max="${mx}" step="${st}" value="${G[k]}" oninput="G.${k}=+this.value;this.nextElementSibling.textContent=this.value+'${b}';gorunumUygula()"><span class="kucuk">${G[k]}${b}</span><span></span></div>`).join("")}
+   <div class="gorunum-satir"><span>Hizalama</span><span><label><input type="radio" name="hiza" ${G.hiza==="left"?"checked":""} onchange="G.hiza='left';gorunumUygula()"> Sola</label> &nbsp; <label><input type="radio" name="hiza" ${G.hiza==="justify"?"checked":""} onchange="G.hiza='justify';gorunumUygula()"> İki yana</label></span><span></span><span></span><span></span></div>
+   <p style="margin-top:14px"><button class="btn ikincil" onclick="G=Object.assign({},G_VARS);gorunumUygula();gorunumAc()">Varsayılana dön</button> <span class="kucuk">Ayarlar bu tarayıcıda saklanır.</span></p>`}
+function gorunumAc(){ayarlarAc("gorunum")}
+function odak(ac){document.body.classList.toggle("odak",ac);try{localStorage.setItem("odak",ac?"1":"")}catch(e){}}
+try{if(localStorage.getItem("odak"))document.body.classList.add("odak")}catch(e){}
+document.addEventListener("keydown",e=>{if(!document.body.classList.contains("odak")||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==="Escape"){if($("#modalArka").style.display!=="flex")odak(false)} else if(e.key==="ArrowRight"&&D.s<114)sureAc(D.s+1); else if(e.key==="ArrowLeft"&&D.s>1)sureAc(D.s-1)});
+function ayarlarAc(b="gorunum"){
+  const acik=$("#ayarGovde")&&$("#modalArka").style.display==="flex";
+  if(!acik)modalAc(`<h2 style="margin-top:0">Ayarlar</h2><div class="sekmeler" id="ayarSekme"><button data-b="gorunum" onclick="ayarlarAc('gorunum')">Görünüm</button><button data-b="kaynak" onclick="ayarlarAc('kaynak')">Kaynaklar</button></div><div id="ayarGovde" style="border-top:2px solid var(--vurgu);padding-top:12px"></div>`);
+  document.querySelectorAll("#ayarSekme button").forEach(x=>x.classList.toggle("aktif",x.dataset.b===b));
+  if(b==="gorunum")$("#ayarGovde").innerHTML=gorunumHtml();
+  else{$("#ayarGovde").innerHTML='<div id="kaynakGovde" class="kucuk">Yükleniyor…</div>';kaynakAc(true)}}
+gorunumUygula();
 </script>
 </body>
 </html>
