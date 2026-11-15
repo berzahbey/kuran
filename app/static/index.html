@@ -200,7 +200,7 @@ async function ayetSec(s,a){
   if(a===0){ D.ayet=null; panelCiz(`<div class="baslik"><b>${s}. ${esc(D.sureler[s-1].ad)} Sûresi — genel notlar</b><button class="btn ikincil" onclick="panelKapat()">×</button></div>`); return notlarSekme(); }
   $("#panel").innerHTML='<div class="yukleniyor">Yükleniyor…</div>';
   D.ayet=await api(`/api/ayet/${s}/${a}`);
-  const sek=[["kelime","Kelime & Lügat"],["mealler","Mealler"],["tefsir","Tefsir & İniş"],["hadisler","Hadis"],["notlar",`Notlarım${D.ayet.notlar.length?" ("+D.ayet.notlar.length+")":""}`]];
+  const sek=[["kelime","Kelime & Lügat"],["mealler","Mealler"],["tefsir","Tefsir"],["nuzul","Nüzul Sebebi"],["hadisler","Hadis"],["notlar",`Notlarım${D.ayet.notlar.length?" ("+D.ayet.notlar.length+")":""}`]];
   if(!sek.some(x=>x[0]===D.sekme)&&D.sekme!=="yalin")D.sekme="kelime";
   const ym=D.ayet.yalin;
   panelCiz(`<div class="baslik"><b>${esc(D.ayet.sure)} ${s}:${a}</b><span><button class="btn ikincil" title="Önceki ayet (↑)" onclick="ayetSec(${s},${Math.max(1,a-1)})">‹</button> <button class="btn ikincil" title="Sonraki ayet (↓)" onclick="ayetSec(${s},${Math.min(D.sureler[s-1].ayet,a+1)})">›</button> <button class="btn ikincil" title="Kapat (Esc)" onclick="panelKapat()">×</button></span></div>
@@ -212,7 +212,7 @@ async function ayetSec(s,a){
 function panelCiz(ust){$("#panel").innerHTML=`<div class="panel-ust">${ust}</div><div class="icerik" id="ic"></div>`}
 function panelKapat(){$("#duzen").classList.add("panel-kapali")}
 function sekme(k){if(!$("#ic"))return;D.sekme=k;document.querySelectorAll(".sekmeler button").forEach(b=>b.classList.toggle("aktif",b.dataset.s===k));
-  ({kelime:kelimeSekme,mealler:karsilastirSekme,tefsir:tefsirSekme,tefsirler:tefsirSekme,hadisler:hadisSekme,yalin:yalinSekme,notlar:notlarSekme})[k]()}
+  ({kelime:kelimeSekme,mealler:karsilastirSekme,tefsir:tefsirSekme,tefsirler:tefsirSekme,nuzul:nuzulSekme,hadisler:hadisSekme,yalin:yalinSekme,notlar:notlarSekme})[k]()}
 const ic=h=>$("#ic").innerHTML=h;
 const yukle=()=>ic('<div class="yukleniyor">Yükleniyor… (yerelde yoksa internetten çekiliyor)</div>');
 
@@ -280,16 +280,10 @@ async function karsilastirSekme(){
 
 let tefTur="hepsi",tefDil="hepsi";
 async function tefsirSekme(){
-  yukle(); const [t,n]=await Promise.all([api(`/api/ayet/${D.s}/${D.a}/tefsirler`),api(`/api/ayet/${D.s}/${D.a}/inis`)]);
-  const kayn=(n.vahidi?1:0)+n.rivayetler.length+n.turkce.length;
-  const inisHtml=`<div class="inis-kutu"><b>İniş:</b> ${esc(n.yer||"?")} · iniş sırasına göre ${n.sira}. sure${kayn?` · <a href="#" onclick="this.parentNode.nextElementSibling.open=!this.parentNode.nextElementSibling.open;return false">iniş sebebi rivayetleri (${kayn} kaynak) ▾</a>`:" · bu ayet için iniş sebebi rivayeti bulunmadı"}</div>
-   <details class="inis-detay"><summary></summary>
-   ${n.turkce.map(r=>`<div class="oge"><b>${esc(r.ad)}</b>${r.parcalar.map(p=>`<div>${esc(p)}</div>`).join("")}</div>`).join("")}
-   ${(n.vahidi||n.rivayetler.length)?`<div class="oge" id="nuzulCeviri">${n.ceviri?`<b>Türkçe çeviri (yapay zekâ)</b><div class="md">${md(n.ceviri)}</div>`:(D.yz?`<button class="btn ikincil" onclick="nuzulCevir(this)">Arapça/İngilizce rivayetleri Türkçeye çevir</button>`:"")}</div>`:""}
-   ${n.vahidi?`<div class="oge"><b>Vâhidî — Esbâbü'n-Nüzûl</b> <span class="kucuk">(İngilizce)</span><div style="white-space:pre-wrap">${esc(n.vahidi)}</div></div>`:""}${n.rivayetler.map(r=>`<div class="oge"><b>${r.yil} · ${esc(r.ad)}</b>${r.parcalar.map(p=>`<div class="rtl" style="font-size:17px">${esc(p)}</div>`).join("")}</div>`).join("")}</details>`;
+  yukle(); const t=await api(`/api/ayet/${D.s}/${D.a}/tefsirler`);
   const turler=[...new Set(t.map(x=>x.tur_ad))], diller=[...new Set(t.map(x=>x.dil))];
   const ciz=()=>{const sec=t.filter(x=>(tefTur==="hepsi"||x.tur_ad===tefTur)&&(tefDil==="hepsi"||x.dil===tefDil));
-   ic(inisHtml+`<p class="kucuk">${t.length} tefsir, en eskiden günümüze sıralı. Başlığa tıklayınca tam metin açılır.</p>
+   ic(`<p class="kucuk">${t.length} tefsir, en eskiden günümüze sıralı. Başlığa tıklayınca tam metin açılır.</p>
     <div class="cipler">${["hepsi",...turler].map(d=>`<span class="cip ${d===tefTur?"aktif":""}" data-t="${esc(d)}">${d==="hepsi"?"Tüm türler":esc(d)}</span>`).join("")}</div>
     <div class="cipler">${["hepsi",...diller].map(d=>`<span class="cip ${d===tefDil?"aktif":""}" data-l="${esc(d)}">${d==="hepsi"?"Tüm diller":esc(d)}</span>`).join("")}</div>
     ${sec.map(x=>`<div class="oge"><div style="cursor:pointer" onclick="tefsirAc('${x.slug}',this)"><b>${x.yil<9999?(x.yil+" · "):""}${esc(x.ad)}</b> <span class="rozet">${esc(x.tur_ad)}</span> <span class="kucuk">${esc(x.dil)} · ${Math.round(x.uzunluk/100)/10}k harf</span>
@@ -301,6 +295,27 @@ async function tefsirSekme(){
 async function tefsirAc(slug,el){const k=el.nextElementSibling; if(k.innerHTML){k.innerHTML="";return}
   k.innerHTML='<div class="yukleniyor">…</div>'; const d=await api(`/api/tefsir/${slug}/${D.s}/${D.a}`);
   k.innerHTML=`<div class="tefsir-metin ${AR.test(d.metin)?"rtl":""}">${esc(d.metin)}</div><button class="btn ikincil" style="margin-top:4px" onclick="alintiNot('${esc(d.ad).replace(/'/g,"\\'")}',this)">Bu tefsirden not al</button>`;}
+
+function nuzulKaynaklar(n){
+  return `${n.turkce.map(r=>`<div class="oge"><b>${esc(r.ad)}</b>${r.parcalar.map(p=>`<div>${esc(p)}</div>`).join("")}</div>`).join("")}
+   ${n.vahidi?`<div class="oge"><b>Vâhidî — Esbâbü'n-Nüzûl</b> <span class="kucuk">(İngilizce)</span><div style="white-space:pre-wrap">${esc(n.vahidi)}</div></div>`:""}
+   ${n.rivayetler.map(r=>`<div class="oge"><b>${r.yil} · ${esc(r.ad)}</b>${r.parcalar.map(p=>`<div class="rtl" style="font-size:17px">${esc(p)}</div>`).join("")}</div>`).join("")}`}
+const nuzulVar=n=>!!(n.vahidi||n.rivayetler.length||n.turkce.length);
+function nuzulTurkce(n,s,a){
+  if(!(n.vahidi||n.rivayetler.length))return"";
+  return `<div class="oge nuzul-tr" data-s="${s}" data-a="${a}">${n.ceviri?`<b>Türkçesi</b><div class="md">${md(n.ceviri)}</div>`:(D.yz?'<span class="kucuk">Türkçeye çevriliyor…</span>':'<span class="kucuk">Türkçe çeviri için yapay zekâ anahtarı gerekir.</span>')}</div>`}
+async function nuzulSekme(){
+  yukle(); const s=D.s,a=D.a; const n=await api(`/api/ayet/${s}/${a}/inis`);
+  let h="";
+  if(nuzulVar(n)) h+=`<h4 style="margin:6px 0">${esc(n.sure)} ${a}. ayetin nüzul sebebi</h4>`+nuzulTurkce(n,s,a)+`<details><summary class="kucuk">Kaynak rivayetler</summary>${nuzulKaynaklar(n)}</details>`;
+  else h+=`<p class="kucuk">${a}. ayet için nüzul sebebi rivayeti yok.</p>`;
+  let ns=null;
+  if(a!==1){ns=await api(`/api/ayet/${s}/1/inis`); if(nuzulVar(ns)) h+=`<h4 style="margin:18px 0 6px">${esc(ns.sure)} sûresinin nüzul sebebi (1. ayet)</h4>`+nuzulTurkce(ns,s,1)+`<details><summary class="kucuk">Kaynak rivayetler</summary>${nuzulKaynaklar(ns)}</details>`; else ns=null}
+  if(D.s!==s||D.a!==a||D.sekme!=="nuzul")return; ic(h);
+  if(D.yz) for(const [x,aa] of [[n,a],[ns,1]]) if(x&&!x.ceviri&&(x.vahidi||x.rivayetler.length)){
+    try{const d=await api(`/api/ayet/${s}/${aa}/inis-cevir`,{method:"POST"});const k=document.querySelector(`.nuzul-tr[data-s="${s}"][data-a="${aa}"]`);if(k)k.innerHTML=`<b>Türkçesi</b><div class="md">${md(d.metin)}</div>`}
+    catch(e){const k=document.querySelector(`.nuzul-tr[data-s="${s}"][data-a="${aa}"]`);if(k)k.innerHTML=`<span class="kucuk">Çeviri yapılamadı: ${esc(e.message)}</span>`}}
+}
 async function nuzulCevir(b){b.disabled=true;b.textContent="Çevriliyor…";try{const d=await api(`/api/ayet/${D.s}/${D.a}/inis-cevir`,{method:"POST"});$("#nuzulCeviri").innerHTML=`<b>Türkçe çeviri (yapay zekâ)</b><div class="md">${md(d.metin)}</div>`}catch(e){b.disabled=false;b.textContent=e.message}}
 function alintiNot(kaynak){sekme("notlar");setTimeout(()=>{$("#notMetin").value=`[${kaynak}] `;$("#notEtiket").value="tefsir";$("#notMetin").focus()},50)}
 

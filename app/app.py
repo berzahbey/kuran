@@ -682,7 +682,10 @@ def inis(s: int, a: int):
              "sira": V.NUZUL_SIRASI[s - 1], "vahidi": None, "rivayetler": []}
     tefsir_sure_hazirla(s)
     r = tek("SELECT metin FROM tefsir WHERE slug='en-asbab-al-nuzul-by-al-wahidi' AND s=? AND a=?", s, a)
-    if r: sonuc["vahidi"] = V.ac(r["metin"])
+    if r:
+        t = V.ac(r["metin"])
+        # Kaynaktaki Vâhidî dosyasına Keşfü'l-Esrâr metinleri karışmış: gerçek Vâhidî kaydı ayet künyesiyle başlar ("(…) [3:61]. … informed us")
+        if re.search(r"\[\d+:\d+", t[:400]): sonuc["vahidi"] = t.replace("\ufffd", "ʿ")
     for slug in V.ESBAB_TEFSIRLER:
         r = tek("SELECT metin FROM tefsir WHERE slug=? AND s=? AND a=?", slug, s, a)
         if not r: continue
@@ -723,7 +726,8 @@ def inis_cevir(s: int, a: int):
              [f"[{r['ad']}]\n" + "\n".join(r["parcalar"]) for r in d["rivayetler"]]
     if not kaynak: raise HTTPException(404, "Bu ayet için çevrilecek iniş sebebi rivayeti yok.")
     t = claude("Klasik Arapça ve İngilizce tefsir metinlerini sade, doğru Türkçeye çeviren bir uzmansın. Senet zincirlerini (haddesenâ… an…) kısalt: sadece ilk ravi ve sahâbîyi yaz. "
-               "Kaynak adlarını başlık olarak koru. Uydurma ekleme yapma. Sonunda iki üç cümlelik 'Özet' ver: rivayetler ne diyor, ayrıştıkları nokta var mı.",
+               "Yalnız ayetin nüzul sebebini (hangi olay üzerine, kim hakkında indiğini) anlatan kısımları çevir; nüzul sebebiyle ilgisi olmayan tefsir açıklamalarını atla. "
+               "Kaynak adlarını başlık olarak koru. Uydurma ekleme yapma. Sonunda iki üç cümlelik 'Özet' ver: rivayetler ne diyor, ayrıştıkları nokta var mı. Metinlerde nüzul sebebi yoksa yalnızca 'Bu ayet için nüzul sebebi rivayeti yok.' yaz.",
                f"Ayet {s}:{a} ({V.SURE_ADLARI[s-1]}) için iniş sebebi rivayetleri:\n\n" + "\n\n".join(kaynak)[:24000], 3500)
     with V._kilit: c.execute("INSERT OR REPLACE INTO ceviri_onbellek VALUES(?,?)", (f"nuzul:{s}:{a}", t)); c.commit()
     return {"metin": t}
