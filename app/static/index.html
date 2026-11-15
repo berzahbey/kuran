@@ -339,6 +339,7 @@ let tefTur="hepsi",tefDil="hepsi";
 async function tefsirSekme(){
   yukle(); const t=await api(`/api/ayet/${D.s}/${D.a}/tefsirler`);
   const turler=[...new Set(t.map(x=>x.tur_ad))], diller=[...new Set(t.map(x=>x.dil))];
+  {const v=UI.toLowerCase(); tefTur="hepsi"; tefDil=diller.includes(v)?v:(diller.includes("english")?"english":"hepsi")}   // her ayette varsayılan: arayüz dilinin tefsirleri
   const ciz=()=>{const sec=t.filter(x=>(tefTur==="hepsi"||x.tur_ad===tefTur)&&(tefDil==="hepsi"||x.dil===tefDil));
    ic(`<p class="kucuk">${t.length} tefsir, en eskiden günümüze sıralı. Başlığa tıklayınca tam metin açılır.</p>
     <div class="cipler">${["hepsi",...turler].map(d=>`<span class="cip ${d===tefTur?"aktif":""}" data-t="${esc(d)}">${d==="hepsi"?"Tüm türler":esc(d)}</span>`).join("")}</div>
