@@ -468,7 +468,9 @@ function gorunumUygula(){const r=document.documentElement.style,b=document.body;
   for(const d of ["ar","tr","osm"]){r.setProperty(`--${d}-font`,`"${G[d+"_font"]}",${yedek[d]}`);r.setProperty(`--${d}-boy`,G[d+"_boy"]/100);r.setProperty(`--${d}-renk`,G[d+"_renk"]||"inherit")}
   r.setProperty("--resim-boy",G.resim_boy/100);r.setProperty("--okuma-gen",G.genislik+"px");r.setProperty("--satir",G.satir/100);r.setProperty("--kenar",G.kenar+"px");r.setProperty("--hiza",G.hiza);
   if(G.taban){r.setProperty("--bg",G.taban);r.setProperty("--kart",G.taban)}else{r.removeProperty("--bg");r.removeProperty("--kart")}
-  try{localStorage.setItem("gorunum",JSON.stringify(G))}catch(e){}}
+  try{localStorage.setItem("gorunum",JSON.stringify(G))}catch(e){}
+  if(gorunumHazir){clearTimeout(gorunumZaman);gorunumZaman=setTimeout(()=>fetch("/api/gorunum",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(G)}).catch(()=>{}),600)}}
+let gorunumHazir=false,gorunumZaman=null;
 function gorunumHtml(){
   const satir=(d,ad)=>`<div class="gorunum-satir"><b>${ad}</b>
     ${G_FONT[d]?`<select onchange="G.${d}_font=this.value;gorunumUygula()">${G_FONT[d].map(([v,t])=>`<option value="${v}" ${G[d+"_font"]===v?"selected":""}>${t}</option>`).join("")}</select>`:"<span></span>"}
@@ -481,7 +483,7 @@ function gorunumHtml(){
    <hr style="border:0;border-top:1px solid var(--cizgi)"><b>Sayfa</b>
    ${[["genislik","Satır genişliği",480,1200,20,"px"],["satir","Satır aralığı",120,260,5,"%"],["kenar","Kenar boşluğu",8,120,4,"px"]].map(([k,ad,mn,mx,st,b])=>`<div class="gorunum-satir"><span>${ad}</span><span></span><input type="range" min="${mn}" max="${mx}" step="${st}" value="${G[k]}" oninput="G.${k}=+this.value;this.nextElementSibling.textContent=this.value+'${b}';gorunumUygula()"><span class="kucuk">${G[k]}${b}</span><span></span></div>`).join("")}
    <div class="gorunum-satir"><span>Hizalama</span><span><label><input type="radio" name="hiza" ${G.hiza==="left"?"checked":""} onchange="G.hiza='left';gorunumUygula()"> Sola</label> &nbsp; <label><input type="radio" name="hiza" ${G.hiza==="justify"?"checked":""} onchange="G.hiza='justify';gorunumUygula()"> İki yana</label></span><span></span><span></span><span></span></div>
-   <p style="margin-top:14px"><button class="btn ikincil" onclick="G=Object.assign({},G_VARS);gorunumUygula();gorunumAc()">Varsayılana dön</button> <span class="kucuk">Ayarlar bu tarayıcıda saklanır.</span></p>`}
+   <p style="margin-top:14px"><button class="btn ikincil" onclick="G=Object.assign({},G_VARS);gorunumUygula();gorunumAc()">Varsayılana dön</button> <span class="kucuk">Ayarlar sunucuda saklanır; her cihazda aynı gelir.</span></p>`}
 function gorunumAc(){ayarlarAc("gorunum")}
 function odak(ac){document.body.classList.toggle("odak",ac);try{localStorage.setItem("odak",ac?"1":"")}catch(e){}}
 try{if(localStorage.getItem("odak"))document.body.classList.add("odak")}catch(e){}
@@ -494,6 +496,7 @@ function ayarlarAc(b="gorunum"){
   if(b==="gorunum")$("#ayarGovde").innerHTML=gorunumHtml();
   else{$("#ayarGovde").innerHTML='<div id="kaynakGovde" class="kucuk">Yükleniyor…</div>';kaynakAc(true)}}
 gorunumUygula();
+fetch("/api/gorunum").then(r=>r.json()).then(d=>{gorunumHazir=true;if(d&&Object.keys(d).length){G=Object.assign({},G_VARS,d);gorunumUygula()}else if(JSON.stringify(G)!==JSON.stringify(G_VARS))gorunumUygula()}).catch(()=>{gorunumHazir=true});
 </script>
 </body>
 </html>

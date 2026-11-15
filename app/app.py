@@ -576,6 +576,20 @@ def ara(q: str, meal: str = "", limit: int = 1000):
 # ---------------- Kaynak durumu / toplu indirme ----------------
 _kurulum = {"surec": None, "log": os.path.join(os.path.dirname(V.DB_YOL), "kurulum.log")}
 
+c.execute("CREATE TABLE IF NOT EXISTS kullanici_ayar(ad TEXT PRIMARY KEY, deger TEXT)")
+
+@app.get("/api/gorunum")
+def gorunum_al():
+    r = tek("SELECT deger FROM kullanici_ayar WHERE ad='gorunum'")
+    return json.loads(r["deger"]) if r else {}
+
+@app.post("/api/gorunum")
+def gorunum_kaydet(d: dict = Body(default={})):
+    """Görünüm ayarları sunucuda saklanır: her tarayıcıda/cihazda aynı ayarlar gelir."""
+    with V._kilit:
+        c.execute("INSERT OR REPLACE INTO kullanici_ayar VALUES('gorunum', ?)", (json.dumps(d, ensure_ascii=False),)); c.commit()
+    return {"tamam": True}
+
 @app.get("/api/ayarlar")
 def ayarlar(): return {"yapay_zeka": yz.hazir(), **yz.bilgi()}
 
