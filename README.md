@@ -42,6 +42,7 @@ Her şey uygulamanın kendi veritabanındadır, internetsiz çalışır. İnmemi
 ## Mealler
 - **Zahir'in meali** (`mealler/zahir.json`): ana gövdenin temeli. Onaylı/yeni yalın meal olmayan her ayette okunan metin budur. Parantez içindeki Arapça çeviriyazılar çıkarıldı, Türkçe açıklamalar korundu. Standart numaralamadan ayrıldığı 6 yerde (iki kısa ayetin birlikte çevrildiği yerler) standart numaraya hizalandı.
 - **Osmanlıca meal (OCR taslağı)** (`mealler/osmanlica_ocr.json`): taranmış 605 sayfalık PDF'ten OCR ile çıkarıldı; ayetlerin ~%83'ü ayrı, kalanı önceki ayetle birlikte. Her ayette "kitapta s. N" ile kitabın aslı açılır; bunun için PDF'i sunucuda `veri/ozel/Kuran_Osmanlica_Meal.pdf` olarak koyun.
+- Hayrat Osmanlıca meali: ayet resimleri `mealler/osm-ocr/SSS_AAA.webp` olarak depoda; PDF gerekmez.
 - Yeni meal eklemek: aynı biçimde bir JSON'u `mealler/` (depo) veya `veri/ozel/` (sunucu) klasörüne koymak yeterli.
 
 ## Meal

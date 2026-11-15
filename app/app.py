@@ -147,6 +147,8 @@ def _pdf_sayfa(mid, pdf, n, dpi=200):
 @app.get("/api/resim/{mid}/{s}/{a}.png")
 def ayet_resmi(mid: str, s: int, a: int):
     """Resimli mealde ayetin kitaptan kesilmiş görüntüsü (kesit: [sayfa, x0, y0, x1, y1] oranları, sağa yaslı alt alta)."""
+    hazir = os.path.join(DEPO_MEALLER, os.path.basename(mid), f"{s:03d}_{a:03d}.webp")   # depoda hazır kesilmiş resim (PDF gerekmez)
+    if os.path.exists(hazir): return FileResponse(hazir, media_type="image/webp", headers={"Cache-Control": "max-age=604800"})
     r = tek("SELECT pdf FROM ozel_meal WHERE id=?", mid); k = tek("SELECT kesit FROM ozel_kesit WHERE id=? AND s=? AND a=?", mid, s, a)
     if not r or not k: raise HTTPException(404, "Bu ayetin resmi yok.")
     pdf = os.path.join(OZEL_KLASOR, os.path.basename(r["pdf"] or ""))
