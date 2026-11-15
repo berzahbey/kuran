@@ -240,7 +240,7 @@ const DILLER={Turkish:"Türkçe",Ottoman:"Osmanlıca",Dutch:"Hollandaca",English
 const D={dil:(()=>{try{return localStorage.getItem("dil")||"tr"}catch(e){return "tr"}})(),arapca:(()=>{try{return localStorage.getItem("arapca")==="1"}catch(e){return false}})(),yz:false,sureler:[],s:null,a:null,meal:(()=>{try{return localStorage.getItem("karsilastir")||""}catch(e){return ""}})(),sekme:"kelime",ayet:null};
 
 function okunanAyet(){const m=$("#metin"),ust=m.getBoundingClientRect().top;for(const e of m.querySelectorAll(".ayet")){const r=e.getBoundingClientRect();if(r.bottom>ust+10)return {id:e.id,fark:r.top-ust}}return null}
-function dilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a,okunanAyet())}
+function dilDegistir(){D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,$("#duzen").classList.contains("panel-kapali")?null:D.a,okunanAyet())}
 function dilUygula(){const b=$("#dilDugme");b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}
 function arapcaDegistir(){D.arapca=!D.arapca;try{localStorage.setItem("arapca",D.arapca?"1":"0")}catch(e){};arapcaUygula()}
 function arapcaUygula(){document.body.classList.toggle("arapca-gizli",!D.arapca);$("#arDugme").classList.toggle("acik",D.arapca)}
@@ -312,7 +312,7 @@ async function ayetSec(s,a){
   sekme(D.sekme);
 }
 function panelCiz(ust){$("#panel").innerHTML=`<div class="panel-ust">${ust}</div><div class="icerik" id="ic"></div>`}
-function panelKapat(){$("#duzen").classList.add("panel-kapali")}
+function panelKapat(){$("#duzen").classList.add("panel-kapali");D.a=null;document.querySelectorAll(".ayet.secili").forEach(e=>e.classList.remove("secili"))}
 function sekme(k){if(!$("#ic"))return;D.sekme=k;document.querySelectorAll(".sekmeler button").forEach(b=>b.classList.toggle("aktif",b.dataset.s===k));
   ({kelime:kelimeSekme,mealler:karsilastirSekme,tefsir:tefsirSekme,tefsirler:tefsirSekme,nuzul:nuzulSekme,hadisler:hadisSekme,yalin:yalinSekme,notlar:notlarSekme})[k]()}
 const ic=h=>$("#ic").innerHTML=h;
@@ -418,7 +418,7 @@ function gorusDuzMetin(g){const L=[];L.push(g.ozet||"");(g.kelimeler||[]).forEac
 
 
 // ---------- Sure araştırması ----------
-function amDilDegistir(){const y_=okunanAyet();D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,D.a,y_);
+function amDilDegistir(){const y_=okunanAyet();D.dil=D.dil==="osm"?"tr":"osm";try{localStorage.setItem("dil",D.dil)}catch(e){};dilUygula();if(D.s)sureAc(D.s,$("#duzen").classList.contains("panel-kapali")?null:D.a,y_);
   if(!AM)return;const y=$("#arastirma");const top=$("#amGovde")?.scrollTop||0;
   if(AM.a){arastirmaAc(AM.s,AM.a)}else{const b=y.querySelector(".ar-ust button[onclick='amDilDegistir()']");if(b){b.textContent=D.dil==="osm"?"عثمانلیجه ⇄ Türkçe":"Türkçe ⇄ عثمانلیجه";b.classList.toggle("acik",D.dil==="osm")}
     saMealCiz(AM.s);saTefsirCiz(AM.s).then(()=>{})}}
