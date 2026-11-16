@@ -822,6 +822,16 @@ function ayarlarAc(b="gorunum"){
   else{$("#ayarGovde").innerHTML='<div id="kaynakGovde" class="kucuk">Yükleniyor…</div>';kaynakAc(true)}}
 gorunumUygula();
 fetch("/api/gorunum").then(r=>r.json()).then(d=>{gorunumHazir=true;if(d&&Object.keys(d).length){G=Object.assign({},G_VARS,d);gorunumUygula();if(UI!=="Turkish"&&d.ana&&d.ana[UI]&&D.s)sureAc(D.s,D.a)}else if(JSON.stringify(G)!==JSON.stringify(G_VARS))gorunumUygula()}).catch(()=>{gorunumHazir=true});
+
+// Ekranı açık tut (Screen Wake Lock) — iPad ana ekran uygulaması için
+let ekranKilidi=null;
+async function ekraniAcikTut(){
+  if(!("wakeLock" in navigator)||document.visibilityState!=="visible"||ekranKilidi)return;
+  try{ekranKilidi=await navigator.wakeLock.request("screen");ekranKilidi.addEventListener("release",()=>{ekranKilidi=null})}catch(e){ekranKilidi=null}
+}
+document.addEventListener("visibilitychange",ekraniAcikTut);
+["click","touchend"].forEach(t=>document.addEventListener(t,ekraniAcikTut,{passive:true}));
+ekraniAcikTut();
 </script>
 </body>
 </html>
